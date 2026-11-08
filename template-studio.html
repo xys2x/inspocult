@@ -16,7 +16,7 @@
 <!-- AdSense publisher ID: ca-pub-4805663093054929 (real). The data-ad-slot
      values further down are still placeholders until AdSense gives real slot IDs. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4805663093054929" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="planner.css?v=2026-11-08b">
+<link rel="stylesheet" href="planner.css?v=2026-11-08c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Pacifico&family=Playfair+Display:wght@400;600;700&family=Bebas+Neue&family=Caveat:wght@500;700&family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&family=Anton&family=Abril+Fatface&family=Lobster&family=Dancing+Script:wght@500;700&family=Fredoka:wght@400;500;600;700&family=Archivo+Black&family=Courier+Prime:wght@400;700&family=Yellowtail&family=Josefin+Sans:wght@400;500;600;700&family=Great+Vibes&family=Italianno&family=Chewy&family=Patrick+Hand&family=Press+Start+2P&family=VT323&family=Kalam:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
@@ -25,8 +25,8 @@
     --paper:#f6f3ec;
     --paper-dim:#eeeadf;
     --line:#ddd6c4;
-    --gold:#c9a227;
-    --gold-dim:#e8d48a;
+    --gold:#F5E3A3;      /* butter yellow (was mustard #c9a227) */
+    --gold-dim:#FCF3D3;
     --teal:#2f6f62;
     --red:#b5482f;
     --panel:#1c1a14;
@@ -35,7 +35,7 @@
     --brand-pink:#FFD1DC;
     --brand-pink-text:#5c2035;
     --brand-sage:#A8BFA0;
-    --brand-yellow:#FCE38A;
+    --brand-yellow:#F8EAB2;
     --mono:'IBM Plex Mono', monospace;
     --display:'Fraunces', serif;
     --body:'Inter', sans-serif;
@@ -2613,26 +2613,29 @@ function drawSelectionTo(tctx, tW, tH){
   const cx=x+w/2, cy=y+h/2;
   tctx.save();
   if(rot){ tctx.translate(cx,cy); tctx.rotate(rot); tctx.translate(-cx,-cy); }
-  tctx.strokeStyle = '#c9a227'; tctx.lineWidth = 2; tctx.setLineDash([6,4]);
+  tctx.strokeStyle = 'rgba(22,20,15,.55)'; tctx.lineWidth = 4;
+  tctx.strokeRect(x,y,w,h);
+  tctx.strokeStyle = '#F5E3A3'; tctx.lineWidth = 2; tctx.setLineDash([6,4]);
   tctx.strokeRect(x,y,w,h);
   tctx.setLineDash([]);
-  tctx.fillStyle = '#c9a227';
   const hs = 9;
   [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([hx,hy])=>{
-    tctx.fillRect(hx-hs/2, hy-hs/2, hs, hs);
+    tctx.fillStyle = '#16140f'; tctx.fillRect(hx-hs/2-1.5, hy-hs/2-1.5, hs+3, hs+3);
+    tctx.fillStyle = '#F5E3A3'; tctx.fillRect(hx-hs/2, hy-hs/2, hs, hs);
   });
   // rotate handle: a small knob above the top edge, connected by a line
   const rh = ROTATE_HANDLE_DIST;
   tctx.beginPath();
   tctx.moveTo(cx, y);
   tctx.lineTo(cx, y-rh);
-  tctx.strokeStyle = '#c9a227'; tctx.lineWidth = 2;
+  tctx.strokeStyle = '#16140f'; tctx.lineWidth = 4; tctx.stroke();
+  tctx.strokeStyle = '#F5E3A3'; tctx.lineWidth = 2;
   tctx.stroke();
   tctx.beginPath();
   tctx.arc(cx, y-rh, 8, 0, Math.PI*2);
   tctx.fillStyle = '#ffffff';
   tctx.fill();
-  tctx.lineWidth = 2; tctx.strokeStyle = '#c9a227';
+  tctx.lineWidth = 3; tctx.strokeStyle = '#16140f';
   tctx.stroke();
   tctx.restore();
 }
@@ -2966,7 +2969,7 @@ function renderProps(){
 
   const el = elements.find(x=>x.id===selectedId);
   if(!el){ body.innerHTML = '<div class="empty-state">Nothing selected. Click any piece of the template — every rectangle, label, icon and photo slot is its own editable element. Click empty canvas space to select that spot\'s background grid cell.</div>'; return; }
-  let html = `<label class="field">Type</label><div style="font-family:var(--mono);font-size:11px;color:#c9a227;margin-bottom:10px;text-transform:uppercase;">${el.type}${el.label?' · '+el.label:''}</div>`;
+  let html = `<label class="field">Type</label><div style="font-family:var(--mono);font-size:11px;color:var(--gold);margin-bottom:10px;text-transform:uppercase;">${el.type}${el.label?' · '+el.label:''}</div>`;
 
   if(el.type==='text'||el.type==='emoji'){
     html += `<label class="field">Content</label><textarea class="propbox" id="p_text">${(el.type==='emoji'?el.emoji:el.text)||''}</textarea>`;
@@ -3497,6 +3500,6 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="planner.js?v=2026-11-08b"></script>
+<script src="planner.js?v=2026-11-08c"></script>
 </body>
 </html>

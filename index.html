@@ -18,9 +18,9 @@
     --ink:#292217;
     --paper:#f6f3ec;
     --line:#332f22;
-    --gold:#c9a227;
-    --gold-dim:#e8d48a;
-    --brand-yellow:#FCE38A;
+    --gold:#F5E3A3;      /* butter yellow (was mustard #c9a227) */
+    --gold-dim:#FCF3D3;
+    --brand-yellow:#F8EAB2;
     --brand-pink:#FFD1DC;
     --brand-pink-text:#5c2035;
     --brand-sage:#A8BFA0;
@@ -157,6 +157,69 @@
     .wd-day{ min-height:120px; }
   }
 
+  /* ---- inspo section ---- */
+  .inspo-sec{ padding:60px 0 110px; border-top:1px solid var(--line); position:relative; }
+  .inspo-head{ max-width:760px; margin:0 auto 44px; text-align:center; }
+  .inspo-head .sub{ margin-left:auto; margin-right:auto; max-width:620px; }
+  .inspo-head h2 em{ font-style:italic; color:var(--brand-pink); }
+  .inspo-main{ display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; }
+
+  /* before / after slider */
+  .vs{ position:relative; max-width:440px; width:100%; margin:0 auto; aspect-ratio:4/5; border-radius:18px; overflow:hidden; box-shadow:0 40px 90px -30px rgba(0,0,0,.75); user-select:none; touch-action:pan-y; --pos:50%; }
+  .vs-layer{ position:absolute; inset:0; }
+  .vs-inspo{ background:
+      radial-gradient(circle at 70% 30%, rgba(255,255,255,.55) 0 7%, transparent 8%),
+      radial-gradient(ellipse at 50% 105%, #6f5236 0 30%, transparent 31%),
+      linear-gradient(170deg,#f8efe2 0%,#e9d3b4 45%,#c49a6c 100%); }
+  .vs-me{ background:
+      radial-gradient(circle at 66% 34%, rgba(255,255,255,.5) 0 7%, transparent 8%),
+      radial-gradient(ellipse at 52% 106%, #7a5a3c 0 30%, transparent 31%),
+      linear-gradient(170deg,#fbf3e8 0%,#ecd8bc 45%,#cfa679 100%);
+      clip-path:inset(0 0 0 var(--pos)); }
+  .vs-obj{ position:absolute; border-radius:12px; box-shadow:0 18px 30px -12px rgba(60,40,20,.5); }
+  .vs-inspo .o1{ left:16%; top:46%; width:30%; height:30%; background:linear-gradient(160deg,#fde7ef,#f3b7c9); transform:rotate(-6deg); }
+  .vs-inspo .o2{ left:50%; top:52%; width:32%; height:24%; background:linear-gradient(160deg,#fff,#efe6d6); transform:rotate(4deg); }
+  .vs-me .o1{ left:18%; top:47%; width:29%; height:29%; background:linear-gradient(160deg,#ffe1ea,#f0aec2); transform:rotate(-4deg); }
+  .vs-me .o2{ left:51%; top:53%; width:31%; height:23%; background:linear-gradient(160deg,#fffdf8,#f2e8d8); transform:rotate(6deg); }
+  .vs-tag{ position:absolute; top:16px; z-index:3; font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; background:rgba(22,20,15,.8); color:var(--gold); padding:5px 12px; border-radius:20px; }
+  .vs-tag.l{ left:16px; } .vs-tag.r{ right:16px; }
+  .vs-pin{ position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:2; font-size:11px; font-family:var(--mono); color:#5c2035; background:var(--brand-pink); padding:4px 10px; border-radius:20px; opacity:.95; }
+  .vs-line{ position:absolute; top:0; bottom:0; left:var(--pos); width:3px; margin-left:-1.5px; background:#fff; z-index:3; box-shadow:0 0 12px rgba(0,0,0,.3); }
+  .vs-knob{ position:absolute; top:50%; left:var(--pos); width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:#fff; z-index:4; display:flex; align-items:center; justify-content:center; font-size:15px; color:#16140f; box-shadow:0 8px 20px -6px rgba(0,0,0,.5); }
+  .vs-sig{ position:absolute; right:14px; bottom:12px; z-index:3; font-family:var(--display); font-size:13px; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.45); }
+  .vs input[type=range]{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:ew-resize; z-index:5; margin:0; }
+  .vs-hint{ text-align:center; margin-top:14px; font-family:var(--mono); font-size:11px; color:#8b856f; }
+  .vs-done{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em; background:var(--brand-pink); color:var(--brand-pink-text); padding:8px 14px; border-radius:8px; margin-right:8px; }
+
+  /* 4 steps */
+  .flow{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:0 0 26px; counter-reset:f; }
+  .flow div{ background:#2f2a1d; border:1px solid #443f2d; border-radius:12px; padding:14px 12px; text-align:center; position:relative; }
+  .flow div:not(:last-child)::after{ content:"→"; position:absolute; right:-10px; top:50%; transform:translateY(-50%); color:var(--gold); font-size:13px; z-index:1; }
+  .flow b{ display:block; font-size:22px; margin-bottom:6px; }
+  .flow span{ font-family:var(--display); font-weight:600; font-size:15px; color:var(--paper); }
+  .flow small{ display:block; margin-top:3px; font-size:11.5px; color:#a9a38e; line-height:1.4; }
+  .flow .hl{ background:var(--brand-pink); border-color:var(--brand-pink); }
+  .flow .hl span, .flow .hl small{ color:var(--brand-pink-text); }
+
+  /* why it's useful */
+  .why{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:28px; }
+  .why div{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:rgba(255,255,255,.015); }
+  .why h3{ margin:0 0 4px; font-family:var(--display); font-weight:600; font-size:16px; color:var(--gold-dim); }
+  .why p{ margin:0; font-size:13px; line-height:1.55; color:#b9b39e; }
+  .quote-line{ font-family:var(--display); font-style:italic; font-size:18px; color:var(--brand-sage); margin:0 0 22px; }
+
+  @media (max-width: 860px){
+    .inspo-main{ grid-template-columns:1fr; gap:40px; }
+    .flow{ grid-template-columns:1fr 1fr; }
+    .flow div:nth-child(2)::after{ display:none; }
+    .why{ grid-template-columns:1fr; }
+  }
+
+  /* ---- footer ---- */
+  .site-footer{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px 22px; padding:22px 20px 26px; font-family:var(--mono); font-size:11px; color:#8b856f; }
+  .site-footer a{ color:#c9c3ad; text-decoration:none; border-bottom:1px solid transparent; }
+  .site-footer a:hover{ color:var(--gold-dim); border-bottom-color:var(--gold-dim); }
+
   /* ---------- Bottom ad (one banner per page / tab) ---------- */
   .site-ad-bar{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 12px 10px; border-top:1px solid #332f22; background:#1c1a14; }
   .site-ad-label{ font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:#5a5442; }
@@ -176,6 +239,7 @@
       <a class="brand" href="index.html" style="text-decoration:none"><span class="dot"></span>inspocult <small>easy template studio</small></a>
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
         <a class="tryit" href="#planner">Planner</a>
+        <a class="tryit" href="#inspo">Inspo</a>
         <a class="tryit" href="template-studio.html">Open the studio →</a>
       </div>
     </nav>
@@ -193,13 +257,13 @@
           <span class="pill">💯 +100 templates</span>
           <span class="pill">💾 save in seconds</span>
           <span class="pill">📅 content planner</span>
+          <span class="pill">✨ inspo board</span>
         </div>
         <p class="sub" style="font-size:15px; margin-top:-6px;">Ideal for content creators and easy editing — perfect for Instagram, TikTok, YouTube, banners, and anything that helps grow your business.</p>
         <div class="ctas">
           <a class="btn primary" href="template-studio.html" id="tryFreeBtn">Open the studio, it's free</a>
         </div>
         <p class="fineprint">Free forever, supported by a small ad at the bottom of the page — 100+ aesthetic templates, and more added regularly.</p>
-        <p class="fineprint" style="margin-top:6px;"><a href="privacy-policy.html" style="color:#8b856f;">Privacy Policy</a></p>
       </div>
 
       <div class="visual">
@@ -240,6 +304,52 @@
         </div>
       </div>
     </section>
+
+    <section class="inspo-sec" id="inspo">
+      <div class="inspo-head">
+        <div class="eyebrow"><span class="new-tag">NEW</span> INSPO BOARD</div>
+        <h2 class="sec-title">Stop just saving inspo.<br><em>Start recreating it.</em></h2>
+        <p class="sub">You've saved hundreds of pins you'll never look at again. The Inspo board turns them into content: pin the look, recreate it, press <b>Done</b>, and get a ready-to-post <b>inspo vs me</b>, the format your followers can't scroll past.</p>
+      </div>
+
+      <div class="inspo-main">
+        <div>
+          <div class="vs" id="vsDemo" aria-label="Example inspo vs me comparison. Drag to compare.">
+            <div class="vs-layer vs-inspo"><div class="vs-obj o1"></div><div class="vs-obj o2"></div></div>
+            <div class="vs-layer vs-me"><div class="vs-obj o1"></div><div class="vs-obj o2"></div></div>
+            <span class="vs-tag l">inspo</span><span class="vs-tag r">me</span>
+            <div class="vs-line"></div><div class="vs-knob">⇆</div>
+            <div class="vs-sig">✦ inspocult</div>
+            <input type="range" min="0" max="100" value="50" aria-label="Compare inspo and your version">
+          </div>
+          <p class="vs-hint">↔ drag to compare · this is what you get when you press <span class="vs-done">Done ✓</span></p>
+        </div>
+
+        <div>
+          <div class="flow">
+            <div><b>📌</b><span>Save</span><small>Pin looks you love to your board</small></div>
+            <div><b>📸</b><span>Recreate</span><small>Shoot it or design it your way</small></div>
+            <div class="hl"><b>✓</b><span>Done</span><small>Add your version in one tap</small></div>
+            <div><b>✨</b><span>Share</span><small>Get your inspo vs me post</small></div>
+          </div>
+
+          <p class="quote-line">Your saves, finally turned into posts.</p>
+
+          <div class="why">
+            <div><h3>💡 Never run out of ideas</h3><p>Your board becomes a list of posts you actually want to make. No more staring at a blank grid.</p></div>
+            <div><h3>🔥 The format people love</h3><p>"Inspo vs me" and "Pinterest vs reality" posts get saved, shared and commented on. Now you can make one in seconds.</p></div>
+            <div><h3>📈 See yourself level up</h3><p>Every Done is proof your style is growing. Scroll your recreated list and watch it happen.</p></div>
+            <div><h3>📅 Straight to your planner</h3><p>One click sends the comparison to your content planner, ready with a caption.</p></div>
+          </div>
+
+          <div class="ctas">
+            <a class="btn primary" href="template-studio.html#inspo">Start your inspo board, it's free</a>
+            <a class="btn secondary" href="#planner">How the planner works</a>
+          </div>
+          <p class="fineprint">Uses the same free account as the planner. Your inspo stays private to you.</p>
+        </div>
+      </div>
+    </section>
   </div>
 
   <div class="site-ad-bar">
@@ -249,6 +359,30 @@
     </div>
   </div>
   <script>try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}</script>
+
+
+  <script>
+  (function(){
+    var box = document.getElementById('vsDemo'); if(!box) return;
+    var range = box.querySelector('input'), touched = false, t0 = performance.now();
+    function set(v){ box.style.setProperty('--pos', v + '%'); range.value = v; }
+    range.addEventListener('input', function(){ touched = true; set(range.value); });
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduce) return;
+    (function sweep(now){
+      if(touched) return;
+      var v = 50 + Math.sin((now - t0) / 1400) * 32;   // eases back and forth between ~18% and ~82%
+      set(v.toFixed(1));
+      requestAnimationFrame(sweep);
+    })(t0);
+  })();
+  </script>
+
+  <footer class="site-footer">
+    <span>© inspocult</span>
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <a href="mailto:shopinspocult@gmail.com">Contact</a>
+  </footer>
 
 </body>
 </html>

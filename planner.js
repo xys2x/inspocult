@@ -160,7 +160,10 @@ let cursor = today();
 let selId = null, slideIdx = 0;
 let pendingDate = null, uploadMode = null;   // 'new' | 'append' | 'replace' | 'thumb' | 'old'
 
-const mine = () => me ? store.filter(p => p.owner===me.id && !p.deleted) : [];
+// Everything this account owns on this device. Inspo items share the posts store/table (kind:'inspo').
+const owned = () => me ? store.filter(p => p.owner===me.id && !p.deleted) : [];
+const mine = () => owned().filter(p => p.kind!=='inspo');      // planner posts
+const inspos = () => owned().filter(p => p.kind==='inspo');    // inspo board items
 const postsOn = k => mine().filter(p=>p.date===k).sort((a,b)=>a.time.localeCompare(b.time));
 const isCarousel = p => p.slides.length > 1;
 const fmtsOf = p => p.formats.map(k=>FORMATS[k]).filter(Boolean);
@@ -219,7 +222,7 @@ const LAST_USER_KEY = 'inspocult-last-user';
 function setSync(state, msg=''){
   syncState = state; syncMsg = msg;
   const label = { idle:'', syncing:'Syncing…', synced:'✓ Synced', offline:'Offline · saved on this computer', setup:'Cloud not set up yet', error:'Sync problem' }[state] || '';
-  const el = $('#plSync'); if(el){ el.textContent = label; el.className = 'sync-pill ' + state; el.title = msg || label; }
+  ['#plSync', '#insSync'].forEach(sel => { const el = $(sel); if(el){ el.textContent = label; el.className = 'sync-pill ' + state; el.title = msg || label; } });
   const dot = $('#plAcctDot'); if(dot) dot.className = 'acct-dot ' + state;
   const line = $('#plAcctSync'); if(line) line.textContent = msg || label || 'Up to date';
 }
@@ -232,7 +235,7 @@ function syncError(err, where){
 }
 
 const remoteSlide = s => s ? { id:s.id, type:s.type, mime:s.mime, w:s.w, h:s.h, name:s.name||null, duration:s.duration||null, previewPath:s.previewPath||null } : null;
-const remoteData = p => ({ date:p.date, time:p.time, formats:p.formats, caption:p.caption, tags:p.tags, title:p.title, status:p.status,
+const remoteData = p => ({ kind:p.kind||'post', note:p.note||'', date:p.date, time:p.time, formats:p.formats, caption:p.caption, tags:p.tags, title:p.title, status:p.status,
   created:p.created, updatedAt:p.updatedAt, slides:p.slides.map(remoteSlide), thumb:remoteSlide(p.thumb) });
 
 async function uploadPreview(s, prefix=''){
@@ -297,7 +300,7 @@ async function pullAll(force=false){
       if(local && (local.dirty || (local.updatedAt||0) >= (d.updatedAt||0))) continue;   // ours is newer / unsent
       const keep = new Map(); if(local){ [...local.slides, local.thumb].filter(Boolean).forEach(s => keep.set(s.id, s)); }
       const merge = m => m ? { ...m, blob:(keep.get(m.id)||{}).blob || null, preview:(keep.get(m.id)||{}).preview || null } : null;
-      const p = { id:r.id, owner:me.id, date:d.date, time:d.time||'18:00', formats:d.formats||[], caption:d.caption||'', tags:d.tags||'', title:d.title||'',
+      const p = { id:r.id, owner:me.id, kind:d.kind||'post', note:d.note||'', date:d.date, time:d.time||'18:00', formats:d.formats||[], caption:d.caption||'', tags:d.tags||'', title:d.title||'',
         status:d.status||'draft', created:d.created||Date.now(), updatedAt:d.updatedAt||Date.now(), slides:(d.slides||[]).map(merge), thumb:merge(d.thumb),
         dirty:false, synced:true };
       if(local) Object.assign(local, p); else store.push(p);
@@ -310,7 +313,7 @@ async function pullAll(force=false){
     }
     await pullOldPosts();
     setSync(store.some(p=>p.owner===me.id && p.dirty) ? 'syncing' : 'synced');
-    if(changed) render();
+    if(changed){ render(); renderInspo(); }
     fetchMissingPreviews();
     schedulePush();
   } catch(err){ syncError(err, 'pull'); }
@@ -322,13 +325,13 @@ async function fetchMissingPreviews(){
   if(fetchingPreviews || !me || !sb) return; fetchingPreviews = true;
   try{
     const need = [];
-    mine().forEach(p => [...p.slides, p.thumb].forEach(s => { if(s && !s.preview && !s.blob && s.previewPath) need.push([p,s]); }));
+    owned().forEach(p => [...p.slides, p.thumb].forEach(s => { if(s && !s.preview && !s.blob && s.previewPath) need.push([p,s]); }));
     for(let i=0; i<need.length; i+=4){
       await Promise.all(need.slice(i,i+4).map(async ([p,s]) => {
         const { data, error } = await sb.storage.from(PREVIEW_BUCKET).download(s.previewPath);
         if(!error && data){ s.preview = data; await putLocal(p); }
       }));
-      renderView(); if(selId) renderDrawer();
+      renderView(); if(selId) renderDrawer(); renderInspo();
     }
   } catch(err){ console.warn('preview download', err); }
   fetchingPreviews = false;
@@ -362,7 +365,7 @@ async function pullOldPosts(){
 
 // Make previews for posts saved before previews existed (or uploaded while offline)
 async function ensurePreviews(){
-  for(const p of mine()){
+  for(const p of owned()){
     let changed = false;
     for(const s of [...p.slides, p.thumb]){
       if(s && s.blob && !s.preview){
@@ -404,7 +407,7 @@ async function onSignedIn(user){
 function onSignedOut(){
   me = null; selId = null; oldPosts = { ig:[], tt:[] };
   rememberUser(null); setSync('idle'); renderAccount();
-  if(inPlanner()) switchTab('studio');
+  if(inPlanner() || inInspo()) switchTab('studio');
   updateDueBadge();
 }
 
@@ -620,10 +623,22 @@ function injectUI(){
   // Studio | Planner switch + account in the top bar
   $('#brand').insertAdjacentHTML('afterend', `<div class="pl-switch" id="plSwitch">
     <button data-tab="studio" class="on">Studio</button>
-    <button data-tab="planner">Planner<span class="due" id="plDue" hidden></span></button></div>`);
+    <button data-tab="planner">Planner<span class="due" id="plDue" hidden></span></button>
+    <button data-tab="inspo">Inspo</button></div>`);
   $('#topbar').insertAdjacentHTML('beforeend', `<div class="pl acct" id="plAccount"></div>`);
   const aspectGroup = $('#aspect') && $('#aspect').closest('.top-group'); if(aspectGroup) aspectGroup.classList.add('studio-only');
 
+  $('#main').insertAdjacentHTML('afterend', `<div id="inspo" class="pl">
+    <div class="p-head">
+      <div class="p-title">Inspo board<small>save it · recreate it · compare it</small></div>
+      <div class="stats" id="insStats"></div>
+      <span class="sync-pill" id="insSync"></span>
+      <div class="spacer"></div>
+      <div class="seg" id="insFilter"><button data-f="todo" class="on">To recreate</button><button data-f="done">Recreated</button><button data-f="all">All</button></div>
+      <button class="btn primary" id="insAddBtn">+ Add inspo</button>
+    </div>
+    <div class="view" id="insView"></div>
+  </div>`);
   $('#main').insertAdjacentHTML('afterend', `<div id="planner" class="pl">
     <div class="p-head">
       <div class="p-title" id="plTitle"></div>
@@ -749,20 +764,54 @@ function injectUI(){
     <div class="modal-foot"><button class="btn" id="plConfirmCancel">Cancel</button><button class="btn primary" id="plConfirmOk">OK</button></div>
   </div></div>
 
+  <div class="pl-scrim pl" id="insDoneScrim"><div class="modal ins-modal">
+    <h3 id="insDoneTitle">Nice! Add your version</h3>
+    <div id="insStep1">
+      <p>Upload the photo or video you made (or use your studio design). We\u2019ll put it next to the inspo so you can compare it and share it.</p>
+      <div class="ins-step1">
+        <div class="ins-s1-inspo" id="insS1Inspo"></div>
+        <div class="ins-s1-btns">
+          <button class="btn primary" id="insMineUp">⬆ Upload my version</button>
+          <button class="btn" id="insMineStudio">✦ Use my studio design</button>
+          <button class="link-btn" id="insJustDone">Skip, just mark it as done</button>
+        </div>
+      </div>
+    </div>
+    <div id="insStep2" hidden>
+      <canvas id="insCmp" width="1080" height="1350"></canvas>
+      <div class="ins-opts">
+        <div class="seg" id="insLayout"><button data-l="side" class="on">Side by side · 4:5</button><button data-l="stack">Top &amp; bottom · 9:16</button></div>
+        <label class="check"><input type="checkbox" id="insLabels" checked> inspo / me labels</label>
+      </div>
+      <div class="ins-foot">
+        <button class="btn small" id="insReplace">⬆ Replace my version</button>
+        <div class="spacer"></div>
+        <button class="btn" id="insSave">⬇ Save image</button>
+        <button class="btn primary" id="insToPlanner">📅 Add to planner</button>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Close</button></div>
+  </div></div>
+
   <div class="pl-toast" id="plToast"></div>
   <input type="file" id="plFileIn" accept="image/*,video/*" multiple hidden>
   <input type="file" id="plRestoreIn" accept="application/json,.json" hidden>`);
 }
 
 // ---------- tabs ----------
-function switchTab(t){
-  if(t==='planner' && !me){ requireLogin(() => switchTab('planner')); return; }
+function switchTab(t){   // 'studio' | 'planner' | 'inspo'
+  if((t==='planner' || t==='inspo') && !me){ requireLogin(() => switchTab(t)); return; }
   $$('#plSwitch button').forEach(b => b.classList.toggle('on', b.dataset.tab===t));
-  $('#app').classList.toggle('planner-mode', t==='planner');
+  const app = $('#app');
+  app.classList.toggle('planner-mode', t!=='studio');   // hides the studio (name kept: the studio's shortcuts check it)
+  app.classList.toggle('tab-planner', t==='planner');
+  app.classList.toggle('tab-inspo', t==='inspo');
   if(t==='planner'){ render(); pullAll(); }
+  else if(t==='inspo'){ renderInspo(); pullAll(); }
   else { requestAnimationFrame(()=>{ try{ fitStage(); draw(); }catch(e){} }); }
 }
-const inPlanner = () => $('#app').classList.contains('planner-mode');
+const inPlanner = () => $('#app').classList.contains('tab-planner');
+const inInspo = () => $('#app').classList.contains('tab-inspo');
 
 function updateDueBadge(){
   const k = iso(today()), n = mine().filter(p => p.date===k && p.status!=='posted').length;
@@ -1138,6 +1187,8 @@ async function onFiles(e){
   const files = [...e.target.files]; e.target.value=''; if(!files.length) return;
   toast(files.length>1 ? `Preparing ${files.length} files…` : 'Preparing…');
   const slides = await Promise.all(files.map(slideFromFile));
+  if(uploadMode==='inspo'){ addInspoItems(slides); return; }
+  if(uploadMode==='inspoMine'){ setMyVersion(slides[0]); return; }
   const p = selected();
   if(uploadMode==='old'){
     // only small previews are kept for these: they're just for the feed preview
@@ -1378,14 +1429,197 @@ function bindGlobal(){
   // keep data fresh: back online → send changes; return to the tab → fetch changes from other devices
   window.addEventListener('online', () => { pushAll(); pullAll(true); });
   window.addEventListener('offline', () => me && setSync('offline', 'You’re offline. Changes are saved on this computer and will sync when you’re back online.'));
-  window.addEventListener('focus', () => { if(me && inPlanner()) pullAll(); });
+  window.addEventListener('focus', () => { if(me && (inPlanner() || inInspo())) pullAll(); });
   document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden' && me) pushAll(); });
-  setInterval(() => { updateDueBadge(); if(me && inPlanner() && document.visibilityState==='visible') pullAll(); }, 60*1000);
+  setInterval(() => { updateDueBadge(); if(me && (inPlanner() || inInspo()) && document.visibilityState==='visible') pullAll(); }, 60*1000);
+}
+
+// =========================================================================
+//  INSPO BOARD
+//  Save pictures/videos you love, recreate them, press Done, add your version,
+//  and get an "inspo vs me" comparison image to save or send to the planner.
+//  Items are { kind:'inspo', slides:[inspo, mine?], note, status:'todo'|'done' }.
+// =========================================================================
+let inspoFilter = 'todo';
+let doneId = null, doneLayout = 'side', doneLabels = true;
+
+function renderInspo(){
+  if(!inInspo() || !me) return;
+  const all = inspos().sort((a,b) => (b.created||0) - (a.created||0));
+  const todo = all.filter(p => p.status!=='done'), done = all.filter(p => p.status==='done');
+  const list = inspoFilter==='todo' ? todo : inspoFilter==='done' ? done : all;
+  $('#insStats').innerHTML = `<span class="stat"><b>${todo.length}</b> to recreate</span><span class="stat"><b>${done.length}</b> recreated</span>`;
+  $$('#insFilter button').forEach(b => b.classList.toggle('on', b.dataset.f===inspoFilter));
+  const pill = $('#plSync'), mirror = $('#insSync'); if(pill && mirror){ mirror.textContent = pill.textContent; mirror.className = pill.className; }
+  const v = $('#insView');
+  if(!all.length){
+    v.innerHTML = `<div class="ins-empty">
+      <div class="ins-empty-art"><span></span><span></span><span></span></div>
+      <h3>Your inspo board is empty</h3>
+      <p>Save the looks you love, from Pinterest, Instagram or your camera roll. Recreate them, press <b>Done</b>, and get an <b>inspo vs me</b> post ready to share.</p>
+      <button class="btn primary" id="insEmptyAdd">+ Add your first inspo</button></div>`;
+    $('#insEmptyAdd').onclick = () => { uploadMode='inspo'; $('#plFileIn').click(); };
+    return;
+  }
+  if(!list.length){
+    v.innerHTML = `<div class="ins-empty small"><p>${inspoFilter==='done' ? 'Nothing recreated yet. Press <b>Done ✓</b> on an inspo once you’ve recreated it.' : 'All recreated! ✨ Add more with <b>+ Add inspo</b>.'}</p></div>`;
+    return;
+  }
+  v.innerHTML = `<div class="ins-grid">${list.map(insCard).join('')}</div>`;
+}
+
+function insCard(p){
+  const a = p.slides[0], b = p.slides[1], done = p.status==='done';
+  const ratio = a && a.w && a.h ? `${a.w}/${a.h}` : '4/5';
+  const media = done && b
+    ? `<div class="ins-pair" data-compare="${p.id}" title="Open comparison"><div>${thumbHTML(a)}<span class="ins-tag">inspo</span></div><div>${thumbHTML(b)}<span class="ins-tag me">me</span></div></div>`
+    : `<div class="ins-one" style="aspect-ratio:${ratio}">${thumbHTML(a)}${a && a.type==='video' ? '<span class="ins-play">▶</span>' : ''}</div>`;
+  return `<div class="ins-card ${done?'done':''}" data-id="${p.id}">
+    ${media}
+    <div class="ins-meta">
+      <input class="ins-note" data-note="${p.id}" value="${esc(p.note||'')}" placeholder="add a note… (where it's from, the vibe)" maxlength="140">
+      <div class="ins-actions">
+        ${done
+          ? `<span class="ins-badge">✓ recreated</span>${b ? `<button class="btn small" data-compare="${p.id}">Compare</button>` : `<button class="btn small" data-done="${p.id}">+ My version</button>`}`
+          : `<button class="btn primary small ins-done" data-done="${p.id}">Done ✓</button>`}
+        <button class="btn small icon ins-del" data-del="${p.id}" title="Remove from board">✕</button>
+      </div>
+    </div></div>`;
+}
+
+function addInspoItems(slides){
+  const now = Date.now();
+  slides.forEach((s, i) => {
+    const it = { id:uid(), owner:me.id, kind:'inspo', note:'', status:'todo', date:iso(today()), time:'00:00', formats:[], caption:'', tags:'', title:'',
+      slides:[s], thumb:null, created:now + i, updatedAt:now, dirty:true, synced:false, orphans:[] };
+    store.push(it); touch(it);
+  });
+  inspoFilter = 'todo'; renderInspo();
+  toast(slides.length > 1 ? `${slides.length} inspos added ✨` : 'Inspo added ✨ Recreate it, then press Done');
+}
+
+function openDone(id){
+  const p = inspos().find(x => x.id===id); if(!p) return;
+  doneId = id;
+  const hasMine = !!p.slides[1];
+  $('#insDoneTitle').textContent = hasMine ? 'Inspo vs me' : 'Nice! Add your version';
+  $('#insStep1').hidden = hasMine; $('#insStep2').hidden = !hasMine;
+  if(hasMine) renderCompare(); else $('#insS1Inspo').innerHTML = thumbHTML(p.slides[0]);
+  $('#insDoneScrim').classList.add('open');
+}
+
+function setMyVersion(slide){
+  const p = inspos().find(x => x.id===doneId); if(!p || !slide) return;
+  if(p.slides[1]) dropSlide(p, p.slides[1]);
+  p.slides = [p.slides[0], slide];
+  p.status = 'done'; touch(p);
+  $('#insDoneTitle').textContent = 'Inspo vs me';
+  $('#insStep1').hidden = true; $('#insStep2').hidden = false;
+  renderCompare(); renderInspo();
+  toast('✓ Recreated! Here’s your inspo vs me');
+}
+
+// draw an image into a box, filling it (crops the overflow), like CSS object-fit: cover
+function coverDraw(ctx, img, x, y, w, h){
+  const iw = img.width, ih = img.height, sc = Math.max(w/iw, h/ih);
+  const sw = w/sc, sh = h/sc, sx = (iw - sw)/2, sy = (ih - sh)/2;
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+async function bitmapFor(s){
+  // full image if this device has it; otherwise (and for videos) the preview frame
+  const blob = s && (s.type==='image' && s.blob ? s.blob : s.preview);
+  if(!blob) return null;
+  try{ return await createImageBitmap(blob); }catch(e){ return null; }
+}
+async function renderCompare(){
+  const p = inspos().find(x => x.id===doneId); if(!p || !p.slides[1]) return;
+  const c = $('#insCmp'), ctx = c.getContext('2d');
+  const side = doneLayout==='side';
+  c.width = 1080; c.height = side ? 1350 : 1920;
+  const gap = 8, W = c.width, H = c.height;
+  const boxes = side ? [[0,0,(W-gap)/2,H], [(W+gap)/2,0,(W-gap)/2,H]] : [[0,0,W,(H-gap)/2], [0,(H+gap)/2,W,(H-gap)/2]];
+  ctx.fillStyle = '#f6f3ec'; ctx.fillRect(0,0,W,H);
+  const imgs = await Promise.all([bitmapFor(p.slides[0]), bitmapFor(p.slides[1])]);
+  imgs.forEach((img, i) => {
+    const [x,y,w,h] = boxes[i];
+    if(img) coverDraw(ctx, img, x, y, w, h); else { ctx.fillStyle = '#2a2720'; ctx.fillRect(x,y,w,h); }
+  });
+  if(doneLabels){
+    ['INSPO','ME'].forEach((t, i) => {
+      const [x,y] = boxes[i];
+      ctx.font = '600 30px "IBM Plex Mono", monospace';
+      const tw = ctx.measureText(t).width, px = x + 28, py = y + 28;
+      ctx.fillStyle = 'rgba(22,20,15,.78)';
+      ctx.beginPath(); ctx.roundRect(px, py, tw + 40, 52, 26); ctx.fill();
+      ctx.fillStyle = '#F5E3A3'; ctx.textBaseline = 'middle'; ctx.fillText(t, px + 20, py + 27);
+    });
+  }
+  // small signature, bottom-right
+  ctx.font = '500 24px "Fraunces", serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 8;
+  ctx.fillText('✦ inspocult', W - 26, H - 24);
+  ctx.shadowBlur = 0; ctx.textAlign = 'left';
+}
+const cmpBlob = () => new Promise(res => $('#insCmp').toBlob(b => res(b), 'image/jpeg', 0.92));
+
+async function saveCompare(){
+  const blob = await cmpBlob(); if(!blob) return;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `inspocult-inspo-vs-me-${iso(new Date())}.jpg`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast('Saved ✓');
+}
+async function compareToPlanner(){
+  const c = $('#insCmp'), blob = await cmpBlob(); if(!blob) return;
+  const preview = await previewFromSource(c, c.width, c.height);
+  const slide = { id:uid(), type:'image', mime:'image/jpeg', blob, preview, w:c.width, h:c.height, name:`inspocult-inspo-vs-me-${iso(new Date())}.jpg` };
+  const fm = doneLayout==='side' ? ['ig-post'] : ['ig-story'];
+  const post = newPost(nextEmptyDay(), fm, [slide], { caption:'inspo vs me ✨' });
+  store.push(post); touch(post); updateDueBadge();
+  toast(`Added to your planner on ${dayLabel(post.date)} 📅`);
+}
+
+function bindInspo(){
+  $('#insAddBtn').onclick = () => { uploadMode='inspo'; $('#plFileIn').click(); };
+  $$('#insFilter button').forEach(b => b.onclick = () => { inspoFilter = b.dataset.f; renderInspo(); });
+  const v = $('#insView');
+  v.addEventListener('click', async e => {
+    const d = e.target.closest('[data-done]'); if(d){ openDone(d.dataset.done); return; }
+    const c = e.target.closest('[data-compare]'); if(c){ openDone(c.dataset.compare); return; }
+    const x = e.target.closest('[data-del]');
+    if(x){
+      const p = inspos().find(i => i.id===x.dataset.del); if(!p) return;
+      if(!(await askConfirm('Remove this inspo from your board?', 'Remove', true))) return;
+      p.slides.forEach(forgetURLs); p.deleted = true;
+      if(p.synced) touch(p); else { store = store.filter(i => i!==p); delLocal(p.id); }
+      renderInspo();
+    }
+  });
+  v.addEventListener('input', e => {
+    const n = e.target.closest('[data-note]'); if(!n) return;
+    const p = inspos().find(i => i.id===n.dataset.note); if(p){ p.note = n.value; touchSoon(p); }
+  });
+  $('#insMineUp').onclick = () => { uploadMode='inspoMine'; $('#plFileIn').click(); };
+  $('#insReplace').onclick = () => { uploadMode='inspoMine'; $('#plFileIn').click(); };
+  $('#insMineStudio').onclick = async () => {
+    const btn = $('#insMineStudio'); btn.disabled = true; btn.textContent = 'Capturing…';
+    try{ setMyVersion(await captureStudio('png')); }
+    catch(err){ console.error(err); toast('Couldn’t capture the studio design', true); }
+    btn.disabled = false; btn.textContent = '✦ Use my studio design';
+  };
+  $('#insJustDone').onclick = () => {
+    const p = inspos().find(x => x.id===doneId); if(!p) return;
+    p.status = 'done'; touch(p); closeModals(); renderInspo(); toast('✓ Marked as recreated');
+  };
+  $$('#insLayout button').forEach(b => b.onclick = () => { doneLayout = b.dataset.l; $$('#insLayout button').forEach(x => x.classList.toggle('on', x===b)); renderCompare(); });
+  $('#insLabels').onchange = e => { doneLabels = e.target.checked; renderCompare(); };
+  $('#insSave').onclick = saveCompare;
+  $('#insToPlanner').onclick = compareToPlanner;
 }
 
 // ---------- boot ----------
 async function boot(){
-  injectUI(); bindGlobal();
+  injectUI(); bindGlobal(); bindInspo();
   if(today().getDay()===0) cursor = addDays(today(), 1);   // Sundays (batch day) open on next week
   try{
     db = await openDB();
@@ -1419,6 +1653,7 @@ async function boot(){
   render();
   // links like template-studio.html#planner (from the home page) open straight on the Planner
   if(location.hash === '#planner') switchTab('planner');
+  if(location.hash === '#inspo') switchTab('inspo');
 }
 boot();
 })();
