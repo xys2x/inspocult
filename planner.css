@@ -256,6 +256,8 @@
 .pl .login-form input{ background:var(--ink); color:var(--paper); border:1px solid var(--panel-line); border-radius:6px; padding:10px 11px; font-family:var(--body); font-size:14px; letter-spacing:0; text-transform:none; }
 .pl .login-form input:focus{ outline:none; border-color:var(--gold); }
 .pl .hint:empty{ display:none; }
+.pl .link-btn{ align-self:flex-start; background:none; border:none; padding:0; margin-top:-4px; font-family:var(--body); font-size:12px; color:var(--gold-dim); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.pl .link-btn:hover{ color:var(--brand-yellow); }
 .pl .hint.ok{ color:#9fd3a2; }
 .pl .modal p.fine{ font-size:11px; }
 .pl .check{ display:flex; gap:8px; align-items:flex-start; font-size:12.5px; line-height:1.45; cursor:pointer; }

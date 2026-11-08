@@ -495,12 +495,16 @@ function openLogin(mode){
   setTimeout(()=>$('#plEmail').focus(), 50);
 }
 let loginMode = 'login';
-function setLoginMode(m){
+function setLoginMode(m){   // 'login' | 'signup' | 'reset'
   loginMode = m;
   $$('#plLoginTabs button').forEach(b => b.classList.toggle('on', b.dataset.lm===m));
-  $('#plLoginGo').textContent = m==='login' ? 'Log in' : 'Create account';
+  $('#plLoginTabs').hidden = m==='reset';
+  $('#plPwLabel').hidden = m==='reset';
+  $('#plForgot').hidden = m==='signup';
+  $('#plForgot').textContent = m==='reset' ? '\u2190 Back to log in' : 'Forgot password?';
+  $('#plLoginGo').textContent = { login:'Log in', signup:'Create account', reset:'Email me a reset link' }[m];
   $('#plPassword').autocomplete = m==='login' ? 'current-password' : 'new-password';
-  $('#plLoginHint').textContent = m==='login' ? '' : 'At least 8 characters.';
+  $('#plLoginHint').textContent = m==='signup' ? 'At least 8 characters.' : m==='reset' ? 'Enter the email you signed up with and we\u2019ll send you a link to choose a new password.' : '';
   $('#plLoginErr').textContent = '';
 }
 async function submitLogin(e){
@@ -509,6 +513,7 @@ async function submitLogin(e){
   const email = $('#plEmail').value.trim(), password = $('#plPassword').value;
   const err = $('#plLoginErr'), msg = $('#plLoginMsg'), btn = $('#plLoginGo');
   err.textContent = ''; msg.textContent = '';
+  if(loginMode==='reset'){ await sendResetLink(email); return; }
   if(!email || !password){ err.textContent = 'Enter your email and a password.'; return; }
   if(loginMode==='signup' && password.length < 8){ err.textContent = 'Use at least 8 characters for your password.'; return; }
   btn.disabled = true; const label = btn.textContent; btn.textContent = loginMode==='login' ? 'Logging in…' : 'Creating account…';
@@ -534,6 +539,56 @@ async function submitLogin(e){
       : m;
   }
   btn.disabled = false; btn.textContent = label;
+}
+
+// ----- forgot password -----
+// 1) email a reset link (Supabase sends it through the SMTP sender set up in the dashboard),
+// 2) the link opens the studio already logged in with a PASSWORD_RECOVERY event,
+// 3) we ask for a new password and save it.
+async function sendResetLink(email){
+  const err = $('#plLoginErr'), msg = $('#plLoginMsg'), btn = $('#plLoginGo');
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = 'Enter the email address you signed up with.'; return; }
+  btn.disabled = true; btn.textContent = 'Sending\u2026';
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    if(error) throw error;
+    // same message whether or not the account exists, so emails can't be checked for accounts
+    msg.textContent = 'If there\u2019s an account for this email, a reset link is on its way. Check your inbox (and spam folder); the link works for one hour.';
+  } catch(ex){
+    const m = (ex && ex.message) || '';
+    err.textContent = /rate limit|too many|seconds/i.test(m) ? 'Please wait a minute before asking for another link.'
+      : /Failed to fetch|network/i.test(m) ? 'Can\u2019t reach the server. Check your internet connection.'
+      : 'We couldn\u2019t send the email right now. Please try again later, or contact shopinspocult@gmail.com.';
+    console.warn('reset email', ex);
+  }
+  btn.disabled = false; btn.textContent = 'Email me a reset link';
+}
+function openNewPassword(){
+  closeModals();
+  $('#plNewPw').value = ''; $('#plNewPwErr').textContent = '';
+  $('#plNewPwScrim').classList.add('open');
+  setTimeout(()=>$('#plNewPw').focus(), 50);
+}
+async function saveNewPassword(e){
+  e.preventDefault();
+  const pw = $('#plNewPw').value, err = $('#plNewPwErr'), btn = $('#plNewPwGo');
+  err.textContent = '';
+  if(pw.length < 8){ err.textContent = 'Use at least 8 characters.'; return; }
+  btn.disabled = true; btn.textContent = 'Saving\u2026';
+  try{
+    const { error } = await sb.auth.updateUser({ password: pw });
+    if(error) throw error;
+    $('#plNewPw').value = '';
+    $('#plNewPwScrim').classList.remove('open');
+    if(location.hash) history.replaceState(null, '', location.pathname + location.search);
+    toast('Password changed ✓ You\u2019re logged in');
+  } catch(ex){
+    const m = (ex && ex.message) || 'Something went wrong';
+    err.textContent = /different from the old/i.test(m) ? 'Choose a password that\u2019s different from your old one.'
+      : /session|expired|invalid/i.test(m) ? 'This reset link has expired. Ask for a new one from the login window.'
+      : m;
+  }
+  btn.disabled = false; btn.textContent = 'Save new password';
 }
 
 function renderAccount(){
@@ -603,13 +658,25 @@ function injectUI(){
     <div class="seg" id="plLoginTabs" style="width:100%"><button data-lm="login" class="on" style="flex:1">Log in</button><button data-lm="signup" style="flex:1">Create account</button></div>
     <form id="plLoginForm" class="login-form" novalidate>
       <label>Email<input type="email" id="plEmail" autocomplete="email" required></label>
-      <label>Password<input type="password" id="plPassword" autocomplete="current-password" required></label>
+      <label id="plPwLabel">Password<input type="password" id="plPassword" autocomplete="current-password" required></label>
+      <button type="button" class="link-btn" id="plForgot">Forgot password?</button>
       <div class="hint" id="plLoginHint"></div>
       <div class="hint warn" id="plLoginErr" role="alert"></div>
       <div class="hint ok" id="plLoginMsg"></div>
       <div class="modal-foot"><button type="button" class="btn" data-close>Not now</button><button type="submit" class="btn primary" id="plLoginGo">Log in</button></div>
     </form>
     <p class="fine">The studio stays free to use without an account. Your account only stores your planner: post details and small preview images.</p>
+  </div></div>
+
+  <div class="pl-scrim pl" id="plNewPwScrim"><div class="modal login-modal">
+    <h3>Choose a new password</h3>
+    <p>You opened a password reset link. Pick a new password for your account.</p>
+    <form id="plNewPwForm" class="login-form" novalidate>
+      <label>New password<input type="password" id="plNewPw" autocomplete="new-password" required></label>
+      <div class="hint">At least 8 characters.</div>
+      <div class="hint warn" id="plNewPwErr" role="alert"></div>
+      <div class="modal-foot"><button type="submit" class="btn primary" id="plNewPwGo">Save new password</button></div>
+    </form>
   </div></div>
 
   <div class="pl-scrim pl" id="plDeleteScrim"><div class="modal">
@@ -1283,6 +1350,8 @@ function bindGlobal(){
   $('#plAtpSave').onclick = saveFromStudio;
   $$('#plLoginTabs button').forEach(b => b.onclick = () => setLoginMode(b.dataset.lm));
   $('#plLoginForm').onsubmit = submitLogin;
+  $('#plForgot').onclick = () => { $('#plLoginMsg').textContent = ''; setLoginMode(loginMode==='reset' ? 'login' : 'reset'); $('#plEmail').focus(); };
+  $('#plNewPwForm').onsubmit = saveNewPassword;
   $('#plLogoutGo').onclick = logOut;
   $('#plDelConfirm').oninput = e => { $('#plDelGo').disabled = e.target.value.trim().toUpperCase() !== 'DELETE'; };
   $('#plDelConfirm').onkeydown = e => { if(e.key==='Enter' && !$('#plDelGo').disabled){ e.preventDefault(); deleteAccount(); } };
@@ -1332,6 +1401,7 @@ async function boot(){
     sb.auth.onAuthStateChange((event, session) => {
       // run outside the auth callback (supabase-js recommends not awaiting other calls inside it)
       setTimeout(() => {
+        if(event==='PASSWORD_RECOVERY') openNewPassword();   // arrived from a reset-password email
         if(session && session.user){ if(!me || me.id!==session.user.id) onSignedIn(session.user); }
         else if(event==='SIGNED_OUT'){ if(me) onSignedOut(); }
       }, 0);
