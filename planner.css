@@ -314,3 +314,15 @@
 .pl .ins-opts{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; justify-content:center; margin-top:12px; }
 .pl .ins-foot{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:4px; }
 @media (max-width:600px){ .pl .ins-step1{ grid-template-columns:1fr; } .pl .ins-s1-inspo{ max-width:180px; margin:0 auto; width:100%; } .pl .ins-grid{ columns:2 150px; column-gap:10px; } }
+
+/* big, satisfying ✓ Done button on inspo cards */
+.pl .ins-check{ width:100%; display:flex; align-items:center; justify-content:center; gap:12px; padding:12px 14px; border:none; border-radius:12px; background:var(--brand-pink); color:var(--brand-pink-text); font-family:var(--body); font-weight:700; font-size:16px; letter-spacing:.01em; cursor:pointer; transition:transform .12s, box-shadow .15s; box-shadow:0 6px 18px -8px rgba(255,209,220,.6); }
+.pl .ins-check .ck{ width:30px; height:30px; border-radius:50%; border:2.5px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:16px; line-height:1; transition:background .15s, color .15s; }
+.pl .ins-check:hover{ transform:translateY(-1px); box-shadow:0 10px 24px -8px rgba(255,209,220,.75); }
+.pl .ins-check:hover .ck{ background:var(--brand-pink-text); color:var(--brand-pink); }
+.pl .ins-check:active{ transform:scale(.97); }
+.pl .ins-done-state{ display:flex; align-items:center; gap:10px; padding:8px 8px 8px 10px; border-radius:12px; background:#22301e; color:#9fd3a2; font-weight:700; font-size:14px; }
+.pl .ins-done-state .ck{ width:26px; height:26px; border-radius:50%; background:#9fd3a2; color:#1f3018; display:flex; align-items:center; justify-content:center; font-size:14px; }
+.pl .ins-sub{ display:flex; justify-content:space-between; align-items:center; font-family:var(--mono); font-size:10px; color:#6d6756; text-transform:uppercase; letter-spacing:.05em; }
+.pl .ins-del-link{ background:none; border:none; padding:0; font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:#6d6756; cursor:pointer; }
+.pl .ins-del-link:hover{ color:var(--warn); }

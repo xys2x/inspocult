@@ -121,7 +121,7 @@
 
   /* ---- planner intro ---- */
   .planner-sec{ padding:40px 0 100px; border-top:1px solid var(--line); }
-  .planner-grid{ display:grid; grid-template-columns:.95fr 1.05fr; gap:64px; align-items:center; }
+  .planner-grid{ display:grid; grid-template-columns:.85fr 1.15fr; gap:64px; align-items:center; }
   .new-tag{ display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:.12em; background:var(--brand-pink); color:var(--brand-pink-text); padding:2px 8px; border-radius:4px; margin-right:6px; }
   h2.sec-title{ font-family:var(--display); font-weight:600; font-size:clamp(30px, 3.6vw, 44px); line-height:1.1; margin:0 0 18px; }
   h2.sec-title em{ font-style:italic; color:var(--brand-sage); }
@@ -130,6 +130,12 @@
   .step .n{ font-family:var(--mono); font-size:11px; color:var(--gold-dim); letter-spacing:.1em; }
   .step h3{ font-family:var(--display); font-weight:600; font-size:17px; margin:6px 0 6px; color:var(--paper); }
   .step p{ margin:0; font-size:13px; line-height:1.55; color:#b9b39e; }
+
+  /* real planner screenshot */
+  .planner-shot{ margin:0; }
+  .planner-shot img{ display:block; width:100%; height:auto; border-radius:16px; border:1px solid #443f2d; box-shadow:0 40px 90px -30px rgba(0,0,0,.75); transform:rotate(-1.2deg); }
+  .planner-shot figcaption{ margin-top:16px; text-align:center; font-family:var(--mono); font-size:11px; color:#8b856f; }
+  @media (max-width: 860px){ .planner-shot img{ transform:none; } }
 
   /* little week-calendar illustration (pure CSS) */
   .week-demo{ background:#1c1a14; border:1px solid #443f2d; border-radius:16px; padding:16px; box-shadow:0 40px 90px -30px rgba(0,0,0,.7); transform:rotate(-2deg); }
@@ -189,6 +195,10 @@
   .vs-sig{ position:absolute; right:14px; bottom:12px; z-index:3; font-family:var(--display); font-size:13px; color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.45); }
   .vs input[type=range]{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:ew-resize; z-index:5; margin:0; }
   .vs-hint{ text-align:center; margin-top:14px; font-family:var(--mono); font-size:11px; color:#8b856f; }
+  .big-done-demo{ display:flex; align-items:center; justify-content:center; gap:14px; max-width:440px; margin:18px auto 0; padding:16px; border-radius:14px; background:var(--brand-pink); color:var(--brand-pink-text); font-weight:700; font-size:20px; box-shadow:0 14px 34px -14px rgba(255,209,220,.7); animation:donePulse 2.6s ease-in-out infinite; }
+  .big-done-demo .ck{ width:38px; height:38px; border-radius:50%; border:3px solid currentColor; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  @keyframes donePulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.03); } }
+  @media (prefers-reduced-motion: reduce){ .big-done-demo{ animation:none; } }
   .vs-done{ display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.05em; background:var(--brand-pink); color:var(--brand-pink-text); padding:8px 14px; border-radius:8px; margin-right:8px; }
 
   /* 4 steps */
@@ -199,7 +209,7 @@
   .flow span{ font-family:var(--display); font-weight:600; font-size:15px; color:var(--paper); }
   .flow small{ display:block; margin-top:3px; font-size:11.5px; color:#a9a38e; line-height:1.4; }
   .flow .hl{ background:var(--brand-pink); border-color:var(--brand-pink); }
-  .flow .hl span, .flow .hl small{ color:var(--brand-pink-text); }
+  .flow .hl span, .flow .hl small, .flow .hl b{ color:var(--brand-pink-text); }
 
   /* why it's useful */
   .why{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:28px; }
@@ -297,19 +307,19 @@
           <p class="fineprint">Free account with email and password. Your plans sync across your devices; only small previews are stored, never your full-size files.</p>
         </div>
 
-        <div class="week-demo" aria-hidden="true">
-          <div class="wd-head">9 – 15 Nov <span>✓ Synced</span></div>
-          <div class="wd-days"><div class="wd-day"><b>MON</b><div class="wd-post " style="background:linear-gradient(160deg,#f6efe4,#e2cfb6)"><i class="ig">IG</i></div><div class="wd-post tall" style="background:linear-gradient(160deg,#3f6b5f,#1f2b28)"><i class="tt">TT</i></div></div><div class="wd-day"><b>TUE</b><div class="wd-post multi" style="background:linear-gradient(160deg,#fde7ef,#ffd1dc)"><i class="ig">IG</i></div></div><div class="wd-day"><b>WED</b><div class="wd-post tall" style="background:linear-gradient(160deg,#dfe8d6,#a8bfa0)"><i class="ig">IG</i></div></div><div class="wd-day"><b>THU</b><div class="wd-post tall" style="background:linear-gradient(160deg,#fce38a,#f3c86b)"><i class="tt">TT</i></div></div><div class="wd-day"><b>FRI</b><div class="wd-post multi" style="background:linear-gradient(160deg,#5b4a3a,#2b2620)"><i class="ig">IG</i></div></div><div class="wd-day"><b>SAT</b><div class="wd-post " style="background:linear-gradient(160deg,#e9e1f5,#c7b8e6)"><i class="yt">YT</i></div></div><div class="wd-day today"><b>SUN</b></div></div>
-          <div class="wd-copy"><span>⬇ Media</span><span class="pk">⧉ Caption</span><span class="pk">⧉ Hashtags</span></div>
-        </div>
+        <figure class="planner-shot">
+          <img src="planner-preview.webp" width="2000" height="989" loading="lazy"
+               alt="The inspocult content planner: a week of posts with posting times, Instagram and TikTok formats, statuses and captions">
+          <figcaption>Your whole week in one view: times, platforms, captions and what's ready to post.</figcaption>
+        </figure>
       </div>
     </section>
 
     <section class="inspo-sec" id="inspo">
       <div class="inspo-head">
         <div class="eyebrow"><span class="new-tag">NEW</span> INSPO BOARD</div>
-        <h2 class="sec-title">Stop just saving inspo.<br><em>Start recreating it.</em></h2>
-        <p class="sub">You've saved hundreds of pins you'll never look at again. The Inspo board turns them into content: pin the look, recreate it, press <b>Done</b>, and get a ready-to-post <b>inspo vs me</b>, the format your followers can't scroll past.</p>
+        <h2 class="sec-title">Save the idea now.<br><em>Recreate it later.</em></h2>
+        <p class="sub">See a look you love and think "I want to do that"? Save it to your Inspo board so the idea never gets lost in your camera roll or a sea of pins. When you're ready, recreate it, hit the big <b>✓ Done</b>, and get a ready-to-post <b>inspo vs me</b>, the format your followers can't scroll past.</p>
       </div>
 
       <div class="inspo-main">
@@ -322,28 +332,29 @@
             <div class="vs-sig">✦ inspocult</div>
             <input type="range" min="0" max="100" value="50" aria-label="Compare inspo and your version">
           </div>
-          <p class="vs-hint">↔ drag to compare · this is what you get when you press <span class="vs-done">Done ✓</span></p>
+          <div class="big-done-demo"><span class="ck">✓</span><span>Done</span></div>
+          <p class="vs-hint">↔ drag to compare · recreated it? one big tap on <b>✓ Done</b> and this is what you get</p>
         </div>
 
         <div>
           <div class="flow">
-            <div><b>📌</b><span>Save</span><small>Pin looks you love to your board</small></div>
+            <div><b>📌</b><span>Save</span><small>Keep ideas to recreate later</small></div>
             <div><b>📸</b><span>Recreate</span><small>Shoot it or design it your way</small></div>
-            <div class="hl"><b>✓</b><span>Done</span><small>Add your version in one tap</small></div>
+            <div class="hl"><b>✓</b><span>Done</span><small>One big tap when you've made it</small></div>
             <div><b>✨</b><span>Share</span><small>Get your inspo vs me post</small></div>
           </div>
 
-          <p class="quote-line">Your saves, finally turned into posts.</p>
+          <p class="quote-line">Your ideas, saved for later. Your saves, finally turned into posts.</p>
 
           <div class="why">
-            <div><h3>💡 Never run out of ideas</h3><p>Your board becomes a list of posts you actually want to make. No more staring at a blank grid.</p></div>
+            <div><h3>💡 Never lose an idea again</h3><p>Every look you want to try lives in one place, ready for the day you have time. No more digging through screenshots or a blank grid.</p></div>
             <div><h3>🔥 The format people love</h3><p>"Inspo vs me" and "Pinterest vs reality" posts get saved, shared and commented on. Now you can make one in seconds.</p></div>
             <div><h3>📈 See yourself level up</h3><p>Every Done is proof your style is growing. Scroll your recreated list and watch it happen.</p></div>
             <div><h3>📅 Straight to your planner</h3><p>One click sends the comparison to your content planner, ready with a caption.</p></div>
           </div>
 
           <div class="ctas">
-            <a class="btn primary" href="template-studio.html#inspo">Start your inspo board, it's free</a>
+            <a class="btn primary" href="template-studio.html#inspo">Start saving ideas, it's free</a>
             <a class="btn secondary" href="#planner">How the planner works</a>
           </div>
           <p class="fineprint">Uses the same free account as the planner. Your inspo stays private to you.</p>

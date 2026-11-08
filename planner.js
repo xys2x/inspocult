@@ -630,12 +630,12 @@ function injectUI(){
 
   $('#main').insertAdjacentHTML('afterend', `<div id="inspo" class="pl">
     <div class="p-head">
-      <div class="p-title">Inspo board<small>save it · recreate it · compare it</small></div>
+      <div class="p-title">Inspo board<small>ideas to recreate later</small></div>
       <div class="stats" id="insStats"></div>
       <span class="sync-pill" id="insSync"></span>
       <div class="spacer"></div>
       <div class="seg" id="insFilter"><button data-f="todo" class="on">To recreate</button><button data-f="done">Recreated</button><button data-f="all">All</button></div>
-      <button class="btn primary" id="insAddBtn">+ Add inspo</button>
+      <button class="btn primary" id="insAddBtn">+ Save an idea</button>
     </div>
     <div class="view" id="insView"></div>
   </div>`);
@@ -1455,14 +1455,14 @@ function renderInspo(){
   if(!all.length){
     v.innerHTML = `<div class="ins-empty">
       <div class="ins-empty-art"><span></span><span></span><span></span></div>
-      <h3>Your inspo board is empty</h3>
-      <p>Save the looks you love, from Pinterest, Instagram or your camera roll. Recreate them, press <b>Done</b>, and get an <b>inspo vs me</b> post ready to share.</p>
-      <button class="btn primary" id="insEmptyAdd">+ Add your first inspo</button></div>`;
+      <h3>Save ideas now, recreate them later</h3>
+      <p>Spotted a look you love on Pinterest, Instagram or in your camera roll? Save it here so the idea never gets lost. When you've recreated it, hit the big <b>✓ Done</b> and get an <b>inspo vs me</b> post ready to share.</p>
+      <button class="btn primary" id="insEmptyAdd">+ Save your first idea</button></div>`;
     $('#insEmptyAdd').onclick = () => { uploadMode='inspo'; $('#plFileIn').click(); };
     return;
   }
   if(!list.length){
-    v.innerHTML = `<div class="ins-empty small"><p>${inspoFilter==='done' ? 'Nothing recreated yet. Press <b>Done ✓</b> on an inspo once you’ve recreated it.' : 'All recreated! ✨ Add more with <b>+ Add inspo</b>.'}</p></div>`;
+    v.innerHTML = `<div class="ins-empty small"><p>${inspoFilter==='done' ? 'Nothing recreated yet. Press <b>Done ✓</b> on an inspo once you’ve recreated it.' : 'All recreated! ✨ Save more ideas with <b>+ Save an idea</b>.'}</p></div>`;
     return;
   }
   v.innerHTML = `<div class="ins-grid">${list.map(insCard).join('')}</div>`;
@@ -1477,14 +1477,18 @@ function insCard(p){
   return `<div class="ins-card ${done?'done':''}" data-id="${p.id}">
     ${media}
     <div class="ins-meta">
-      <input class="ins-note" data-note="${p.id}" value="${esc(p.note||'')}" placeholder="add a note… (where it's from, the vibe)" maxlength="140">
-      <div class="ins-actions">
-        ${done
-          ? `<span class="ins-badge">✓ recreated</span>${b ? `<button class="btn small" data-compare="${p.id}">Compare</button>` : `<button class="btn small" data-done="${p.id}">+ My version</button>`}`
-          : `<button class="btn primary small ins-done" data-done="${p.id}">Done ✓</button>`}
-        <button class="btn small icon ins-del" data-del="${p.id}" title="Remove from board">✕</button>
-      </div>
+      <input class="ins-note" data-note="${p.id}" value="${esc(p.note||'')}" placeholder="idea note… (what to recreate, where it's from)" maxlength="140">
+      ${done
+        ? `<div class="ins-done-state"><span class="ck">✓</span><span>Recreated</span><span class="spacer"></span>${b ? `<button class="btn small" data-compare="${p.id}">Compare</button>` : `<button class="btn small" data-done="${p.id}">+ My version</button>`}</div>`
+        : `<button class="ins-check" data-done="${p.id}" title="I recreated this!"><span class="ck">✓</span><span>Done</span></button>`}
+      <div class="ins-sub"><span>saved ${savedAgo(p.created)}</span><button class="ins-del-link" data-del="${p.id}">remove</button></div>
     </div></div>`;
+}
+
+function savedAgo(t){
+  if(!t) return '';
+  const days = Math.floor((today() - new Date(new Date(t).setHours(0,0,0,0))) / 86400000);
+  return days <= 0 ? 'today' : days === 1 ? 'yesterday' : days < 7 ? `${days} days ago` : days < 14 ? 'last week' : days < 60 ? `${Math.floor(days/7)} weeks ago` : `${Math.floor(days/30)} months ago`;
 }
 
 function addInspoItems(slides){
@@ -1495,7 +1499,7 @@ function addInspoItems(slides){
     store.push(it); touch(it);
   });
   inspoFilter = 'todo'; renderInspo();
-  toast(slides.length > 1 ? `${slides.length} inspos added ✨` : 'Inspo added ✨ Recreate it, then press Done');
+  toast(slides.length > 1 ? `${slides.length} ideas saved ✨` : 'Idea saved ✨ Recreate it whenever you\u2019re ready, then hit ✓ Done');
 }
 
 function openDone(id){
