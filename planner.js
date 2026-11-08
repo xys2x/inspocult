@@ -1628,6 +1628,7 @@ async function boot(){
     if(u){ me = u; oldPosts = (await kvGet('oldPosts:'+me.id)) || { ig:[], tt:[] }; setSync('offline', 'You’re offline. Changes are saved on this computer and will sync when you’re back online.'); }
   }
   renderAccount();
+  renderRemPill();
   render();
   // links like template-studio.html#planner (from the home page) open straight on the Planner
   if(location.hash === '#planner') switchTab('planner');
