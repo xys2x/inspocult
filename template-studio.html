@@ -16,7 +16,7 @@
 <!-- AdSense publisher ID: ca-pub-4805663093054929 (real). The data-ad-slot
      values further down are still placeholders until AdSense gives real slot IDs. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4805663093054929" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="planner.css?v=2026-11-08d">
+<link rel="stylesheet" href="planner.css?v=2026-11-08j">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Pacifico&family=Playfair+Display:wght@400;600;700&family=Bebas+Neue&family=Caveat:wght@500;700&family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&family=Anton&family=Abril+Fatface&family=Lobster&family=Dancing+Script:wght@500;700&family=Fredoka:wght@400;500;600;700&family=Archivo+Black&family=Courier+Prime:wght@400;700&family=Yellowtail&family=Josefin+Sans:wght@400;500;600;700&family=Great+Vibes&family=Italianno&family=Chewy&family=Patrick+Hand&family=Press+Start+2P&family=VT323&family=Kalam:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
@@ -80,7 +80,7 @@
   .btn.small{ padding:5px 8px; font-size:10.5px;}
 
   /* ---------- Layout ---------- */
-  #main{ display:grid; grid-template-columns:216px 1fr 296px; grid-template-rows:minmax(0,1fr); min-height:0; height:100%; overflow:hidden; }
+  #main{ display:grid; grid-template-columns:236px 1fr 340px; grid-template-rows:minmax(0,1fr); min-height:0; height:100%; overflow:hidden; }
 
   /* ---------- Mobile tab bar (hidden on desktop) ---------- */
   #mobileTabs{ display:none; }
@@ -198,9 +198,50 @@
   .site-ad-box:has(.site-ad[data-ad-status="filled"]){ outline-color:transparent; }
   @media (max-width:760px){ .site-ad-box, .site-ad{ width:320px; height:50px; } .site-ad-bar{ padding:5px 8px 6px; } }
 
+/* ---------- frame size in the right bar ---------- */
+  #right select#aspect{ width:100%; }
+  /* ---------- undo / redo / clear in the top bar ---------- */
+  #historyBar{ gap:6px; }
+  #historyBar .btn:disabled{ opacity:.35; cursor:default; }
+  .hist-sep{ width:1px; height:20px; background:var(--panel-line); margin:0 4px; }
+  /* ---------- right-click menu ---------- */
+  .ctx-menu{ position:fixed; z-index:9000; min-width:210px; padding:6px; background:#1f1c15; border:1px solid #3d3826; border-radius:10px; box-shadow:0 18px 40px -12px rgba(0,0,0,.7); }
+  .ctx-menu[hidden]{ display:none; }
+  .ctx-menu button{ width:100%; display:flex; justify-content:space-between; align-items:center; gap:18px; background:none; border:none; padding:7px 10px; border-radius:6px; color:var(--paper); font-family:var(--body); font-size:13px; cursor:pointer; text-align:left; }
+  .ctx-menu button:hover:not(:disabled){ background:rgba(245,227,163,.14); }
+  .ctx-menu button:disabled{ opacity:.35; cursor:default; }
+  .ctx-menu kbd{ font-family:var(--mono); font-size:10.5px; color:#8b856f; }
+  .ctx-sep{ height:1px; background:#332f22; margin:5px 4px; }
+  /* ---------- left bar: favourites + list/grid ---------- */
+  .tpl-head{ display:flex; align-items:center; justify-content:space-between; margin:4px 4px 10px; }
+  .tpl-head h4{ margin:0 !important; }
+  .tpl-view{ display:inline-flex; border:1px solid var(--panel-line); border-radius:6px; overflow:hidden; }
+  .tpl-view button{ background:none; border:none; color:#8b856f; font-size:13px; line-height:1; padding:5px 8px; cursor:pointer; }
+  .tpl-view button.on{ background:var(--gold); color:var(--ink); }
+  .tpl-filter{ display:flex; gap:6px; margin:0 4px 12px; }
+  .tpl-filter button{ flex:1; background:none; border:1px solid var(--panel-line); border-radius:20px; color:#8b856f; font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; padding:5px 6px; cursor:pointer; }
+  .tpl-filter button.on{ border-color:var(--gold); color:var(--gold-dim); background:rgba(245,227,163,.08); }
+  .tpl-card{ position:relative; }
+  .tpl-fav{ position:absolute; top:6px; right:6px; z-index:2; width:28px; height:28px; border-radius:50%; border:none; background:rgba(22,20,15,.75); color:#c9c3ad; font-size:15px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .12s, color .12s; }
+  .tpl-fav:hover{ transform:scale(1.1); color:#ff8fab; }
+  .tpl-fav.on{ color:#ff6f91; }
+  .tpl-edited{ margin-left:6px; color:var(--gold); }
+  .tpl-empty{ font-size:12px; color:#8b856f; line-height:1.5; padding:10px 6px; }
+  #tplList.view-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  #tplList.view-grid .tpl-card{ padding:6px; margin:0; }
+  #tplList.view-grid .tpl-desc, #tplList.view-grid .tpl-name{ display:none; }
+  #tplList.view-grid .tpl-frame-num{ font-size:8px; }
+  #tplList.view-grid .tpl-edited{ display:block; margin:2px 0 0; }
+  #tplList.view-grid .tpl-thumb{ margin:4px 0 0; }
+  #tplList.view-grid .tpl-fav{ width:24px; height:24px; font-size:13px; top:4px; right:4px; }
+
 /* =============== MOBILE (phones & narrow tablets) =============== */
 @media (max-width: 860px){
   #app{ grid-template-rows:auto auto minmax(0,1fr) auto; }
+  #app{ grid-template-columns:minmax(0,1fr); }   /* never let the top bar stretch the page wider than the phone */
+  #historyBar{ flex-wrap:wrap; width:100%; gap:5px; }
+  #historyBar .btn{ padding:6px 8px; font-size:10px; }
+  .hist-sep{ display:none; }
 
   #topbar{ flex-wrap:wrap; row-gap:8px; padding:10px 12px; }
   #brand{ font-size:16px; }
@@ -250,16 +291,12 @@
     <a id="brand" href="index.html" title="Back to the inspocult home page"><span class="dot"></span>inspocult <small>easy template studio</small></a>
     <div id="trialBadge" class="top-group" style="display:none;"></div>
     <div class="spacer"></div>
-    <div class="top-group">
-      <label class="hint-key" for="aspect">frame</label>
-      <select id="aspect">
-        <option value="1080x1350" selected>4:5 · post</option>
-        <option value="1080x1080">1:1 · square</option>
-        <option value="1080x1920">9:16 · story / reels / TikTok</option>
-        <option value="1280x720">16:9 · YouTube</option>
-        <option value="1200x628">Banner</option>
-        <option value="1050x600">3.5:2 · business card</option>
-      </select>
+    <div class="top-group studio-only" id="historyBar">
+      <button class="btn small hist-btn" id="undoBtn" title="Undo (⌘Z)" disabled>↶ Undo</button>
+      <button class="btn small hist-btn" id="redoBtn" title="Redo (⇧⌘Z)" disabled>↷ Redo</button>
+      <span class="hist-sep"></span>
+      <button class="btn small" id="clearTplBtn" title="Reset this template to how it started">Clear this template</button>
+      <button class="btn small" id="clearAllBtn" title="Reset every template you've edited">Clear all templates</button>
     </div>
     <input type="file" id="fileInputBg" accept="image/*,video/*">
   </div>
@@ -279,7 +316,13 @@
         <div id="previewWrap"><canvas id="previewCanvas" width="180" height="225"></canvas></div>
         <div id="previewLabel">updates as you edit</div>
       </div>
-      <h4>Templates</h4>
+      <div class="tpl-head">
+        <h4>Templates</h4>
+        <div class="tpl-view" role="group" aria-label="Template view">
+          <button id="tplViewList" title="Show as a list">☰</button><button id="tplViewGrid" title="Show as a grid">▦</button>
+        </div>
+      </div>
+      <div class="tpl-filter" role="group" aria-label="Which templates"><button data-tf="all">All</button><button data-tf="fav">♥ Favourites</button></div>
       <div id="tplList"></div>
     </div>
 
@@ -296,6 +339,18 @@
     <div id="right">
 
       <div class="rsection">
+        <h4>Frame size</h4>
+        <select id="aspect">
+        <option value="1080x1350" selected>4:5 · post</option>
+        <option value="1080x1080">1:1 · square</option>
+        <option value="1080x1920">9:16 · story / reels / TikTok</option>
+        <option value="1280x720">16:9 · YouTube</option>
+        <option value="1200x628">Banner</option>
+        <option value="1050x600">3.5:2 · business card</option>
+      </select>
+      </div>
+
+      <div class="rsection">
         <h4>Grid Layout</h4>
         <div class="addbar" id="bgLayoutButtons">
           <button class="btn small layout-btn" data-layout="full" title="Full"></button>
@@ -307,6 +362,7 @@
           <button class="btn small layout-btn" data-layout="top1bottom2" title="Top + 2"></button>
           <button class="btn small layout-btn" data-layout="top2bottom1" title="Bottom + 2"></button>
           <button class="btn small layout-btn" data-layout="grid6" title="Grid 6"></button>
+          <button class="btn small layout-btn" data-layout="grid6v" title="Grid 6 · 2 · 2 · 2"></button>
         </div>
       </div>
 
@@ -362,6 +418,7 @@
 </div>
 
 
+<div id="ctxMenu" class="ctx-menu" hidden role="menu"></div>
 <input type="file" id="fileInputImg" accept="image/*,video/*">
 <input type="file" id="fileInputRectFill" accept="image/*,video/*">
 
@@ -468,8 +525,9 @@ const LAYOUTS = {
   top1bottom2: [ {x:0,y:0,w:1,h:.5}, {x:0,y:.5,w:.5,h:.5}, {x:.5,y:.5,w:.5,h:.5} ],
   top2bottom1: [ {x:0,y:0,w:.5,h:.5}, {x:.5,y:0,w:.5,h:.5}, {x:0,y:.5,w:1,h:.5} ],
   grid6:  (()=>{ const a=[]; for(let r=0;r<2;r++) for(let c=0;c<3;c++) a.push({x:c/3,y:r/2,w:1/3,h:1/2}); return a; })(),
+  grid6v: (()=>{ const a=[]; for(let r=0;r<3;r++) for(let c=0;c<2;c++) a.push({x:c/2,y:r/3,w:1/2,h:1/3}); return a; })(),   // 2 · 2 · 2
 };
-const LAYOUT_LABELS = { full:'Full', split2:'Cols 2', rows2:'Rows 2', split3:'Cols 3', rows3:'Rows 3', grid4:'Grid 4', top1bottom2:'Top + 2', top2bottom1:'Bottom + 2', grid6:'Grid 6' };
+const LAYOUT_LABELS = { full:'Full', split2:'Cols 2', rows2:'Rows 2', split3:'Cols 3', rows3:'Rows 3', grid4:'Grid 4', top1bottom2:'Top + 2', top2bottom1:'Bottom + 2', grid6:'Grid 6', grid6v:'2 · 2 · 2' };
 function makeBgCell(){ return { type:'none', el:null, src:null, color:'#0e0d0a', focalX:.5, focalY:.5, zoom:1 }; }
 let bg = { layout:'full', cells:[ makeBgCell() ] };
 let activeBgUploadIndex = 0;
@@ -478,7 +536,7 @@ function setBgLayout(layout){
   const need = LAYOUTS[layout].length;
   const cells = [];
   const tpl = TEMPLATES.find(t=>t.key===currentTplKey);
-  const fresh = ()=>{ const c = makeBgCell(); if(tpl && tpl.bgColor){ c.color = tpl.bgColor; c.tplColor = true; } return c; };
+  const fresh = ()=> freshBg(tpl).cells[0];
   for(let i=0;i<need;i++) cells.push(bg.cells[i] || fresh());
   bg.cells.slice(need).forEach(c=>{ if(c.type==='video' && c.el) c.el.pause(); });
   bg.layout = layout; bg.cells = cells;
@@ -2250,18 +2308,30 @@ function buildTemplates(){
 const TEMPLATES = buildTemplates();
 let currentTplKey = null;
 
-function loadTemplate(key){
+// Each template remembers its own work (photos, text, layout, background) while the
+// page is open, so switching templates never wipes what you did.
+let templateStates = {};   // key -> { elements, bg }
+const freshBg = tpl => { const c = makeBgCell(); if(tpl && tpl.bgColor){ c.color = tpl.bgColor; c.tplColor = true; } return { layout:'full', cells:[c] }; };
+const freshElements = tpl => tpl.build().map((e,i)=>({...e, z: e.z*10+i}));
+const mediaOf = st => [...st.bg.cells.map(c=>c.el), ...st.elements.map(e=>e.el), ...st.elements.map(e=>e.fillEl)].filter(m => m && m.tagName==='VIDEO');
+function tplEdited(){ return histFor(currentTplKey).stack.length > 1; }
+function loadTemplate(key, opts={}){
   const tpl = TEMPLATES.find(t=>t.key===key);
   if(!tpl) return;
+  if(currentTplKey && currentTplKey!==key){
+    const leaving = { elements, bg };
+    if(tplEdited()) templateStates[currentTplKey] = leaving;
+    mediaOf(leaving).forEach(v => v.pause());
+  }
   currentTplKey = key;
-  // Templates may set a background colour (e.g. White Canvas). Empty background
-  // cells take it; colours a template set get reset when switching to one without.
-  bg.cells.forEach(c=>{
-    if(c.type!=='none') return;
-    if(tpl.bgColor){ c.color = tpl.bgColor; c.tplColor = true; }
-    else if(c.tplColor){ c.color = makeBgCell().color; c.tplColor = false; }
-  });
-  elements = tpl.build().map((e,i)=>({...e, z: e.z*10+i}));
+  const saved = !opts.fresh && templateStates[key];
+  if(saved){
+    elements = saved.elements; bg = saved.bg;
+    mediaOf(saved).forEach(v => { v.play().catch(()=>{}); }); videoLoop();
+  } else {
+    elements = freshElements(tpl); bg = freshBg(tpl);
+  }
+  refreshBgLayoutButtons();
   selectedId = null;
   const layerList = document.getElementById('layerList');
   const layersChevron = document.getElementById('layersChevron');
@@ -2273,19 +2343,41 @@ function loadTemplate(key){
   draw();
 }
 
+// ---- favourites + list/grid view (remembered in this browser) ----
+const prefGet = (k, d) => { try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } };
+const prefSet = (k, v) => { try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+let favTemplates = new Set(prefGet('inspocult-fav-templates', []));
+let tplView = prefGet('inspocult-tpl-view', 'list');      // 'list' | 'grid'
+let tplFilter = prefGet('inspocult-tpl-filter', 'all');   // 'all' | 'fav'
+function toggleFav(key){
+  favTemplates.has(key) ? favTemplates.delete(key) : favTemplates.add(key);
+  prefSet('inspocult-fav-templates', [...favTemplates]);
+  renderTplList();
+}
 function renderTplList(){
   const container = document.getElementById('templates');
   const scrollPos = container.scrollTop;
   const wrap = document.getElementById('tplList');
+  wrap.className = 'view-' + tplView;
+  document.getElementById('tplViewList').classList.toggle('on', tplView==='list');
+  document.getElementById('tplViewGrid').classList.toggle('on', tplView==='grid');
+  document.querySelectorAll('.tpl-filter button').forEach(b => b.classList.toggle('on', b.dataset.tf===tplFilter));
   wrap.innerHTML='';
-  TEMPLATES.forEach((t,i)=>{
+  const shown = TEMPLATES.map((t,i)=>[t,i]).filter(([t]) => tplFilter!=='fav' || favTemplates.has(t.key));
+  if(!shown.length){
+    wrap.innerHTML = '<div class="tpl-empty">No favourites yet. Tap the <b>♡</b> on any template to keep it here.</div>';
+  }
+  shown.forEach(([t,i])=>{
     const card = document.createElement('div');
+    const fav = favTemplates.has(t.key), edited = !!templateStates[t.key] || (t.key===currentTplKey && tplEdited());
     card.className = 'tpl-card' + (t.key===currentTplKey?' active':'');
-    card.innerHTML = `<div class="tpl-frame-num">FRAME ${String(i+1).padStart(2,'0')}</div>
+    card.title = t.name;
+    card.innerHTML = `<div class="tpl-frame-num">FRAME ${String(i+1).padStart(2,'0')}${edited ? '<span class="tpl-edited" title="You\u2019ve edited this one">● edited</span>' : ''}</div>
+      <button class="tpl-fav ${fav?'on':''}" title="${fav ? 'Remove from favourites' : 'Add to favourites'}" aria-pressed="${fav}">${fav ? '♥' : '♡'}</button>
       <div class="tpl-thumb" id="thumb-${t.key}"></div>
       <div class="tpl-name">${t.name}</div>
       <div class="tpl-desc">${t.desc}</div>`;
-    card.onclick = ()=> loadTemplate(t.key);
+    card.onclick = (e)=>{ if(e.target.closest('.tpl-fav')){ e.stopPropagation(); toggleFav(t.key); return; } loadTemplate(t.key); };
     wrap.appendChild(card);
   });
   container.scrollTop = scrollPos;
@@ -2315,10 +2407,11 @@ function getOrCreateThumbCanvas(key){
 function drawTemplateThumbnail(t, tctx){
   tctx.clearRect(0,0,200,250);
   tctx.fillStyle = t.bgColor || '#0e0d0a'; tctx.fillRect(0,0,200,250);
-  if(t.key === currentTplKey){
-    const geos = LAYOUTS[bg.layout];
+  const st = t.key === currentTplKey ? { elements, bg } : templateStates[t.key];
+  if(st){
+    const geos = LAYOUTS[st.bg.layout];
     geos.forEach((geo, idx)=>{
-      const cell = bg.cells[idx] || makeBgCell();
+      const cell = st.bg.cells[idx] || makeBgCell();
       const cx=geo.x*200, cy=geo.y*250, cw=geo.w*200, ch=geo.h*250;
       tctx.save(); tctx.beginPath(); tctx.rect(cx,cy,cw,ch); tctx.clip();
       if(cell.type==='image' && cell.el){ drawCoverTo(tctx, cell.el, cx,cy,cw,ch, { focalX:cell.focalX, focalY:cell.focalY, zoom:cell.zoom }); }
@@ -2326,7 +2419,7 @@ function drawTemplateThumbnail(t, tctx){
       else { tctx.fillStyle = cell.color; tctx.fillRect(cx,cy,cw,ch); }
       tctx.restore();
     });
-    [...elements].sort((a,b)=>a.z-b.z).forEach(e=> drawElementTo(tctx, 200, 250, e));
+    [...st.elements].sort((a,b)=>a.z-b.z).forEach(e=> drawElementTo(tctx, 200, 250, e));
   } else {
     [...t.build()].sort((a,b)=>a.z-b.z).forEach(e=> drawElementTo(tctx, 200, 250, e));
   }
@@ -2502,6 +2595,7 @@ function draw(panT){
     renderScene(previewCtx, previewCanvas.width, previewCanvas.height, { panT });
   }
   refreshActiveThumbnail();
+  scheduleCommit();
 }
 
 function drawElementTo(tctx, tW, tH, el){
@@ -2731,7 +2825,7 @@ function hitElement(pos){
 // only a mild deterrent against casually saving the image out for free — it
 // cannot stop an actual OS screenshot or screen recording, since no website
 // has access to block that.
-canvas.addEventListener('contextmenu', (e)=> e.preventDefault());
+// right-click: custom menu (see RIGHT-CLICK MENU); the browser's own menu stays hidden
 
 function handleCanvasDown(e){
   if(e.type==='touchstart') e.preventDefault();
@@ -3200,6 +3294,131 @@ document.getElementById('fileInputRectFill').addEventListener('change',(e)=>{
   e.target.value = '';
 });
 
+// =========================== UNDO / REDO / CLEAR =========================
+// Snapshots are taken automatically a moment after anything changes (never in
+// the middle of a drag), one history per template. Photos/videos are kept by
+// reference, so undo is instant and uses no extra memory for media.
+const HISTORY_MAX = 60;
+const histories = {};   // template key -> { stack:[{sig, elements, bg}], idx }
+function histFor(key){ return histories[key] || (histories[key] = { stack:[], idx:-1 }); }
+function stateSig(){
+  return JSON.stringify({ e: elements.map(({el, fillEl, ...rest}) => rest), l: bg.layout,
+    c: bg.cells.map(c => [c.type, c.src, c.color, c.focalX, c.focalY, c.zoom]) });
+}
+function snapshot(){ return { sig: stateSig(), elements: elements.map(e=>({...e})), bg: { layout:bg.layout, cells: bg.cells.map(c=>({...c})) } }; }
+function commitHistory(){
+  if(!currentTplKey) return;
+  const h = histFor(currentTplKey), sig = stateSig();
+  if(h.idx >= 0 && h.stack[h.idx].sig === sig) return;
+  h.stack = h.stack.slice(0, h.idx + 1);
+  h.stack.push(snapshot());
+  if(h.stack.length > HISTORY_MAX) h.stack.shift();
+  h.idx = h.stack.length - 1;
+  updateHistoryButtons();
+  if(h.stack.length === 2) renderTplList();   // first edit: show "● edited" on the card
+}
+let commitTimer = null;
+function scheduleCommit(){
+  if(commitTimer) return;
+  commitTimer = setTimeout(()=>{ commitTimer = null; if(drag) scheduleCommit(); else commitHistory(); }, 450);
+}
+function restoreSnapshot(snap){
+  elements = snap.elements.map(e=>({...e}));
+  bg = { layout: snap.bg.layout, cells: snap.bg.cells.map(c=>({...c})) };
+  selectedId = null;
+  refreshBgLayoutButtons(); renderLayerList(); renderProps(); draw(); updateHistoryButtons();
+}
+function undo(){ const h = histFor(currentTplKey); if(h.idx <= 0) return; h.idx--; restoreSnapshot(h.stack[h.idx]); setStatus('Undone.'); }
+function redo(){ const h = histFor(currentTplKey); if(h.idx >= h.stack.length - 1) return; h.idx++; restoreSnapshot(h.stack[h.idx]); setStatus('Redone.'); }
+function updateHistoryButtons(){
+  const h = histFor(currentTplKey);
+  document.getElementById('undoBtn').disabled = h.idx <= 0;
+  document.getElementById('redoBtn').disabled = h.idx >= h.stack.length - 1;
+}
+async function askStudio(msg, ok){ return window.plAskConfirm ? window.plAskConfirm(msg, ok, true) : confirm(msg); }
+async function clearThisTemplate(){
+  if(!(await askStudio('Clear this template? Your photos, text and changes on it are removed. (You can undo this.)', 'Clear template'))) return;
+  const tpl = TEMPLATES.find(t=>t.key===currentTplKey);
+  delete templateStates[currentTplKey];
+  elements = freshElements(tpl); bg = freshBg(tpl); selectedId = null;
+  refreshBgLayoutButtons(); renderLayerList(); renderProps(); draw();
+  commitHistory(); renderTplList(); setStatus('Template cleared. Press Undo to bring it back.');
+}
+async function clearAllTemplates(){
+  const n = Object.keys(templateStates).length + (tplEdited() ? 1 : 0);
+  if(!n){ setStatus('Nothing to clear: no template has been edited yet.'); return; }
+  if(!(await askStudio(`Clear all ${n} edited template${n>1?'s':''}? Every photo, text and change is removed. This can’t be undone.`, 'Clear all'))) return;
+  Object.values(templateStates).forEach(st => mediaOf(st).forEach(v => v.pause()));
+  templateStates = {};
+  Object.keys(histories).forEach(k => delete histories[k]);
+  const tpl = TEMPLATES.find(t=>t.key===currentTplKey);
+  elements = freshElements(tpl); bg = freshBg(tpl); selectedId = null;
+  refreshBgLayoutButtons(); renderLayerList(); renderProps(); draw();
+  commitHistory(); renderTplList(); setStatus('All templates cleared.');
+}
+document.getElementById('undoBtn').onclick = undo;
+document.getElementById('redoBtn').onclick = redo;
+document.getElementById('clearTplBtn').onclick = clearThisTemplate;
+document.getElementById('clearAllBtn').onclick = clearAllTemplates;
+window.addEventListener('keydown', (e)=>{
+  if(document.getElementById('app').classList.contains('planner-mode')) return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if(tag==='TEXTAREA' || tag==='INPUT' || tag==='SELECT') return;
+  const mod = e.metaKey || e.ctrlKey;
+  if(mod && (e.key==='z' || e.key==='Z')){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if(mod && (e.key==='y' || e.key==='Y')){ e.preventDefault(); redo(); }
+});
+
+// =========================== RIGHT-CLICK MENU =============================
+function pasteElement(){
+  if(!clipboardEl) return;
+  const copy = { ...clipboardEl, id: nextId() };
+  copy.x = Math.min(0.94-copy.w, copy.x + 0.03);
+  copy.y = Math.min(0.94-copy.h, copy.y + 0.03);
+  copy.z = Math.max(0, ...elements.map(x=>x.z)) + 1;
+  elements.push(copy);
+  selectedId = copy.id;
+  draw(); renderLayerList(); renderProps(); setStatus('Element pasted.');
+}
+function deleteSelected(){
+  if(!selectedId || selectedId.startsWith('__bg_')) return;
+  elements = elements.filter(x=>x.id!==selectedId); selectedId = null;
+  draw(); renderLayerList(); renderProps();
+}
+function toFront(el){ el.z = Math.max(...elements.map(x=>x.z)) + 1; draw(); renderLayerList(); }
+function toBack(el){ el.z = Math.min(...elements.map(x=>x.z)) - 1; draw(); renderLayerList(); }
+const ctxMenu = document.getElementById('ctxMenu');
+function hideCtxMenu(){ ctxMenu.hidden = true; }
+function showCtxMenu(e){
+  e.preventDefault();
+  const pos = canvasPos(e), el = hitElement(pos);
+  if(el){ selectedId = el.id; draw(); renderProps(); }
+  const h = histFor(currentTplKey), mac = /Mac|iPhone|iPad/.test(navigator.platform), K = mac ? '⌘' : 'Ctrl+';
+  const items = [
+    ['copy', 'Copy', K+'C', !el], ['paste', 'Paste', K+'V', !clipboardEl], ['duplicate', 'Duplicate', K+'D', !el], ['delete', 'Delete', '⌫', !el],
+    'sep', ['front', 'Bring to front', '', !el], ['back', 'Send to back', '', !el],
+    'sep', ['undo', 'Undo', K+'Z', h.idx <= 0], ['redo', 'Redo', mac ? '⇧⌘Z' : 'Ctrl+Y', h.idx >= h.stack.length - 1],
+  ];
+  ctxMenu.innerHTML = items.map(it => it==='sep' ? '<div class="ctx-sep"></div>'
+    : `<button data-act="${it[0]}" ${it[3] ? 'disabled' : ''}><span>${it[1]}</span><kbd>${it[2]}</kbd></button>`).join('');
+  ctxMenu.hidden = false;
+  const r = ctxMenu.getBoundingClientRect();
+  ctxMenu.style.left = Math.min(e.clientX, innerWidth - r.width - 8) + 'px';
+  ctxMenu.style.top = Math.min(e.clientY, innerHeight - r.height - 8) + 'px';
+  ctxMenu.onclick = ev => {
+    const b = ev.target.closest('button[data-act]'); if(!b || b.disabled) return;
+    const cur = elements.find(x=>x.id===selectedId);
+    ({ copy:()=>{ clipboardEl = cloneElementData(cur); setStatus('Element copied.'); }, paste:pasteElement, duplicate:()=>duplicateElement(cur),
+       delete:deleteSelected, front:()=>toFront(cur), back:()=>toBack(cur), undo, redo })[b.dataset.act]();
+    hideCtxMenu();
+  };
+}
+canvas.addEventListener('contextmenu', showCtxMenu);
+window.addEventListener('mousedown', e => { if(!ctxMenu.hidden && !e.target.closest('#ctxMenu')) hideCtxMenu(); }, true);
+window.addEventListener('keydown', e => { if(e.key==='Escape') hideCtxMenu(); });
+window.addEventListener('resize', hideCtxMenu);
+document.getElementById('stage-wrap').addEventListener('scroll', hideCtxMenu, true);
+
 // =========================== COPY / PASTE / DUPLICATE =====================
 function cloneElementData(el){
   const copy = { ...el, id: nextId() };
@@ -3223,16 +3442,7 @@ window.addEventListener('keydown', (e)=>{
     const el = elements.find(x=>x.id===selectedId);
     if(el){ clipboardEl = cloneElementData(el); setStatus('Element copied.'); e.preventDefault(); }
   } else if(mod && (e.key==='v' || e.key==='V')){
-    if(clipboardEl){
-      const copy = { ...clipboardEl, id: nextId() };
-      copy.x = Math.min(0.94-copy.w, copy.x + 0.03);
-      copy.y = Math.min(0.94-copy.h, copy.y + 0.03);
-      copy.z = Math.max(0, ...elements.map(x=>x.z)) + 1;
-      elements.push(copy);
-      selectedId = copy.id;
-      draw(); renderLayerList(); renderProps(); setStatus('Element pasted.');
-      e.preventDefault();
-    }
+    if(clipboardEl){ pasteElement(); e.preventDefault(); }
   } else if(mod && (e.key==='d' || e.key==='D')){
     const el = elements.find(x=>x.id===selectedId);
     if(el){ duplicateElement(el); e.preventDefault(); }
@@ -3451,8 +3661,12 @@ document.getElementById('layersToggle').addEventListener('click', ()=>{
   list.style.display = nowOpen ? 'flex' : 'none';
   chevron.textContent = nowOpen ? '▾' : '▸';
 });
+document.getElementById('tplViewList').onclick = ()=>{ tplView='list'; prefSet('inspocult-tpl-view', tplView); renderTplList(); };
+document.getElementById('tplViewGrid').onclick = ()=>{ tplView='grid'; prefSet('inspocult-tpl-view', tplView); renderTplList(); };
+document.querySelectorAll('.tpl-filter button').forEach(b => b.onclick = ()=>{ tplFilter = b.dataset.tf; prefSet('inspocult-tpl-filter', tplFilter); renderTplList(); });
 renderTplList();
 loadTemplate('blank');
+commitHistory();
 refreshBgLayoutButtons();
 fitStage();
 initPaywall();
@@ -3500,6 +3714,6 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="planner.js?v=2026-11-08d"></script>
+<script src="planner.js?v=2026-11-08j"></script>
 </body>
 </html>

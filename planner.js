@@ -162,7 +162,7 @@ let pendingDate = null, uploadMode = null;   // 'new' | 'append' | 'replace' | '
 
 // Everything this account owns on this device. Inspo items share the posts store/table (kind:'inspo').
 const owned = () => me ? store.filter(p => p.owner===me.id && !p.deleted) : [];
-const mine = () => owned().filter(p => p.kind!=='inspo');      // planner posts
+const mine = () => owned().filter(p => !p.kind || p.kind==='post');   // planner posts (not inspo items / sticky note)
 const inspos = () => owned().filter(p => p.kind==='inspo');    // inspo board items
 const postsOn = k => mine().filter(p=>p.date===k).sort((a,b)=>a.time.localeCompare(b.time));
 const isCarousel = p => p.slides.length > 1;
@@ -193,8 +193,6 @@ function warningsFor(p){
   const out = [], fs = fmtsOf(p), n = p.slides.length;
   if(!fs.length) out.push({ msg:'Pick at least one platform format' });
   if(!n) out.push({ msg:'No media yet' });
-  const ratios = [...new Set(fs.map(ratioTxt))];
-  if(ratios.length > 1) out.push({ msg:`These formats need different sizes (${ratios.join(' vs ')}). One design can’t fit both well.`, split:true });
   fs.forEach(f => {
     const nm = `${PLATFORMS[f.plat]} ${f.name}`;
     if(n > 1 && !f.carousel) out.push({ msg:`${nm} can’t be a carousel; it’s a single ${f.media==='video'?'video':'item'}` });
@@ -202,11 +200,6 @@ function warningsFor(p){
     if(f.media==='video' && p.slides.some(s=>s.type!=='video')) out.push({ msg:`${nm} needs a video` });
     if(f.media==='image' && p.slides.some(s=>s.type==='video')) out.push({ msg:`${nm} carousels can’t include videos` });
   });
-  const target = fs[0];
-  if(target) p.slides.forEach((s,i) => {
-    if(s.w && s.h && !fits(target, s.w, s.h)) out.push({ msg:`${n>1?`Slide ${i+1}`:'This file'} is ${s.w}×${s.h}; ${PLATFORMS[target.plat]} ${target.name} is ${ratioTxt(target)} (${target.w}×${target.h}), so it will be cropped.` });
-  });
-  if(p.thumb && p.thumb.w && Math.abs(p.thumb.w/p.thumb.h - 16/9) > 0.04 && fs.some(f=>f.thumb)) out.push({ msg:`Thumbnail is ${p.thumb.w}×${p.thumb.h}; YouTube thumbnails are 16:9 (1280×720).` });
   return out;
 }
 
@@ -235,7 +228,10 @@ function syncError(err, where){
 }
 
 const remoteSlide = s => s ? { id:s.id, type:s.type, mime:s.mime, w:s.w, h:s.h, name:s.name||null, duration:s.duration||null, previewPath:s.previewPath||null } : null;
-const remoteData = p => ({ kind:p.kind||'post', note:p.note||'', date:p.date, time:p.time, formats:p.formats, caption:p.caption, tags:p.tags, title:p.title, status:p.status,
+const USER_TZ = (() => { try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }catch(e){ return 'UTC'; } })();
+function dueAtOf(p){ const d = new Date(`${p.date}T${p.time || '18:00'}`); return isNaN(d) ? null : d.toISOString(); }   // local date+time → UTC
+const remoteData = p => ({ kind:p.kind||'post', note:p.note||'', date:p.date, time:p.time, dueAt: p.kind && p.kind!=='post' ? null : dueAtOf(p), tz:USER_TZ,
+  formats:p.formats, caption:p.caption, tags:p.tags, title:p.title, status:p.status,
   created:p.created, updatedAt:p.updatedAt, slides:p.slides.map(remoteSlide), thumb:remoteSlide(p.thumb) });
 
 async function uploadPreview(s, prefix=''){
@@ -312,6 +308,7 @@ async function pullAll(force=false){
       if(selId===p.id) selId = null;
     }
     await pullOldPosts();
+    await loadReminders();
     setSync(store.some(p=>p.owner===me.id && p.dirty) ? 'syncing' : 'synced');
     if(changed){ render(); renderInspo(); }
     fetchMissingPreviews();
@@ -404,7 +401,38 @@ async function onSignedIn(user){
   pullAll(true);
 }
 
+// ----- email reminders (sent by the post-reminders function on Supabase) -----
+let reminders = { emailReminders:false, leadMin:0 };
+function renderRemPill(){
+  const b = $('#plRemPill'); if(!b) return;
+  b.textContent = reminders.emailReminders ? `✉ reminders on${reminders.leadMin ? ` · ${reminders.leadMin===60 ? '1 h' : reminders.leadMin+' min'} before` : ''}` : '✉ reminders off';
+  b.classList.toggle('on', !!reminders.emailReminders);
+}
+async function loadReminders(){
+  if(!me) return;
+  const local = await kvGet('settings:'+me.id); if(local) reminders = { ...reminders, ...local };
+  if(sb){ try{ const { data } = await sb.from('planner_kv').select('value').eq('key','settings').maybeSingle(); if(data && data.value) reminders = { ...reminders, ...data.value }; }catch(e){} }
+  renderRemPill();
+}
+async function saveReminders(change){
+  const turningOn = change.emailReminders === true && !reminders.emailReminders;
+  reminders = { ...reminders, ...change };
+  await kvSet('settings:'+me.id, reminders);
+  renderRemPill(); renderAccount();
+  if(turningOn){
+    // make sure every upcoming post has its posting time on the server
+    mine().filter(p => fromIso(p.date) >= today() && p.status!=='posted').forEach(p => { p.dirty = true; putLocal(p); });
+    schedulePush();
+  }
+  try{
+    const { error } = await sb.from('planner_kv').upsert({ user_id:me.id, key:'settings', value:reminders, updated_at:new Date().toISOString() }, { onConflict:'user_id,key' });
+    if(error) throw error;
+    toast(reminders.emailReminders ? `Reminders on ✓ We'll email ${me.email} ${reminders.leadMin ? (reminders.leadMin===60 ? '1 hour' : reminders.leadMin+' minutes')+' before' : 'when'} each post is due` : 'Email reminders off');
+  } catch(err){ console.error(err); toast('Couldn’t save the reminder setting. Check your connection and try again.', true); }
+}
+
 function onSignedOut(){
+  reminders = { emailReminders:false, leadMin:0 };
   me = null; selId = null; oldPosts = { ig:[], tt:[] };
   rememberUser(null); setSync('idle'); renderAccount();
   if(inPlanner() || inInspo()) switchTab('studio');
@@ -605,6 +633,14 @@ function renderAccount(){
     <div class="acct-menu" id="plAcctMenu" hidden>
       <div class="acct-email">${esc(me.email)}</div>
       <div class="acct-sync" id="plAcctSync"></div>
+      <div class="acct-rem">
+        <label class="check"><input type="checkbox" id="plRemOn" ${reminders.emailReminders ? 'checked' : ''}> ✉ Email me when it's time to post</label>
+        <select id="plRemLead" ${reminders.emailReminders ? '' : 'disabled'}>
+          <option value="0" ${reminders.leadMin==0?'selected':''}>at the posting time</option>
+          <option value="15" ${reminders.leadMin==15?'selected':''}>15 minutes before</option>
+          <option value="60" ${reminders.leadMin==60?'selected':''}>1 hour before</option>
+        </select>
+      </div>
       <button class="btn small" id="plSyncNow">⟳ Sync now</button>
       <button class="btn small" id="plLogoutBtn">Log out</button>
       <button class="acct-delete" id="plDeleteAcctBtn">Delete account…</button>
@@ -613,6 +649,8 @@ function renderAccount(){
   $('#plDeleteAcctBtn').onclick = () => { $('#plAcctMenu').hidden = true; openDeleteAccount(); };
   $('#plAcctBtn').onclick = e => { e.stopPropagation(); $('#plAcctMenu').hidden = !$('#plAcctMenu').hidden; };
   $('#plSyncNow').onclick = async () => { $('#plAcctMenu').hidden = true; await pushAll(); await pullAll(true); };
+  $('#plRemOn').onchange = e => saveReminders({ emailReminders: e.target.checked });
+  $('#plRemLead').onchange = e => saveReminders({ leadMin: +e.target.value });
   $('#plLogoutBtn').onclick = () => { $('#plAcctMenu').hidden = true; $('#plLogoutWipe').checked = false; $('#plLogoutEmail').textContent = me.email; $('#plLogoutScrim').classList.add('open'); };
 }
 
@@ -630,20 +668,31 @@ function injectUI(){
 
   $('#main').insertAdjacentHTML('afterend', `<div id="inspo" class="pl">
     <div class="p-head">
-      <div class="p-title">Inspo board<small>ideas to recreate later</small></div>
+      <div class="p-title">Inspo board<small>inspo it · save it · recreate it</small></div>
       <div class="stats" id="insStats"></div>
       <span class="sync-pill" id="insSync"></span>
       <div class="spacer"></div>
-      <div class="seg" id="insFilter"><button data-f="todo" class="on">To recreate</button><button data-f="done">Recreated</button><button data-f="all">All</button></div>
+      <div class="seg" id="insFilter"><button data-f="all" class="on">All</button><button data-f="todo">To recreate</button><button data-f="done">Recreated</button></div>
       <button class="btn primary" id="insAddBtn">+ Save an idea</button>
     </div>
-    <div class="view" id="insView"></div>
+    <div class="ins-body">
+      <div class="view" id="insView"></div>
+      <aside class="ins-side">
+        <div class="sticky">
+          <span class="sticky-tape"></span>
+          <div class="sticky-head">remember ✎</div>
+          <textarea id="insMemo" spellcheck="true" placeholder="things to remember for later…&#10;&#10;– props to buy&#10;– golden hour is at 17:40&#10;– ask Ana to take the photo"></textarea>
+          <div class="sticky-foot" id="insMemoState">saved to your account</div>
+        </div>
+      </aside>
+    </div>
   </div>`);
   $('#main').insertAdjacentHTML('afterend', `<div id="planner" class="pl">
     <div class="p-head">
       <div class="p-title" id="plTitle"></div>
       <div class="stats" id="plStats"></div>
       <span class="sync-pill" id="plSync"></span>
+      <button class="rem-pill" id="plRemPill" title="Email reminders"></button>
       <div class="spacer"></div>
       <div class="seg" id="plViewSwitch">
         <button data-view="week" class="on">Week</button><button data-view="month">Month</button><button data-view="feed">Feed preview</button>
@@ -762,35 +811,6 @@ function injectUI(){
   <div class="pl-scrim pl" id="plConfirmScrim"><div class="modal confirm-modal" role="alertdialog" aria-modal="true">
     <p id="plConfirmMsg"></p>
     <div class="modal-foot"><button class="btn" id="plConfirmCancel">Cancel</button><button class="btn primary" id="plConfirmOk">OK</button></div>
-  </div></div>
-
-  <div class="pl-scrim pl" id="insDoneScrim"><div class="modal ins-modal">
-    <h3 id="insDoneTitle">Nice! Add your version</h3>
-    <div id="insStep1">
-      <p>Upload the photo or video you made (or use your studio design). We\u2019ll put it next to the inspo so you can compare it and share it.</p>
-      <div class="ins-step1">
-        <div class="ins-s1-inspo" id="insS1Inspo"></div>
-        <div class="ins-s1-btns">
-          <button class="btn primary" id="insMineUp">⬆ Upload my version</button>
-          <button class="btn" id="insMineStudio">✦ Use my studio design</button>
-          <button class="link-btn" id="insJustDone">Skip, just mark it as done</button>
-        </div>
-      </div>
-    </div>
-    <div id="insStep2" hidden>
-      <canvas id="insCmp" width="1080" height="1350"></canvas>
-      <div class="ins-opts">
-        <div class="seg" id="insLayout"><button data-l="side" class="on">Side by side · 4:5</button><button data-l="stack">Top &amp; bottom · 9:16</button></div>
-        <label class="check"><input type="checkbox" id="insLabels" checked> inspo / me labels</label>
-      </div>
-      <div class="ins-foot">
-        <button class="btn small" id="insReplace">⬆ Replace my version</button>
-        <div class="spacer"></div>
-        <button class="btn" id="insSave">⬇ Save image</button>
-        <button class="btn primary" id="insToPlanner">📅 Add to planner</button>
-      </div>
-    </div>
-    <div class="modal-foot"><button class="btn" data-close>Close</button></div>
   </div></div>
 
   <div class="pl-toast" id="plToast"></div>
@@ -952,7 +972,7 @@ function renderDrawer(){
     <div>
       <div class="lbl">Where & format</div>
       ${Object.keys(PLATFORMS).map(pl => `<div class="fmt-group"><span class="pn">${PLATFORMS[pl]}</span><div class="fmt-opts">
-        ${Object.entries(FORMATS).filter(([,x])=>x.plat===pl).map(([k,x])=>`<button class="pf ${pl} ${p.formats.includes(k)?'on':''}" data-fmt="${k}" title="${x.w} × ${x.h}">${ratioIcon(x)}${x.name} <small>${ratioTxt(x)}</small></button>`).join('')}
+        ${Object.entries(FORMATS).filter(([,x])=>x.plat===pl).map(([k,x])=>`<button class="pf ${pl} ${p.formats.includes(k)?'on':''}" data-fmt="${k}" title="${x.w} × ${x.h} · ${ratioTxt(x)}">${ratioIcon(x)}${x.name}</button>`).join('')}
       </div></div>`).join('')}
       <div class="sizes">${uniqueSizes.map(x=>`<div>${fs.filter(y=>y.w===x.w&&y.h===x.h).map(y=>y.short).join(' + ')}<span>${x.w} × ${x.h} px · ${ratioTxt(x)}</span></div>`).join('')}
         ${hasThumb?`<div>YT Thumbnail<span>${YT_THUMB.w} × ${YT_THUMB.h} px · 16:9</span></div>`:''}</div>
@@ -1011,6 +1031,7 @@ function renderDrawer(){
 
     <div class="post-block">
       <div class="lbl">Posting time</div>
+      <p class="quality-note">✦ For the best quality, post the <b>original file</b> from your camera roll or folder. The planner is for organising and reference.</p>
       <p>${!fullHere && n ? `The full-size file${n>1?'s are':' is'} on the computer you made this post on${names.length?`: <b>${names.map(esc).join(', ')}</b>`:''}. Here you have the preview, caption and hashtags.`
           : multi?`Slides download numbered 01–${pad(n)} so they stay in order.`:hasThumb?'Downloads the video and its thumbnail.':'Download, copy, paste into the app, then mark it posted.'}</p>
       <div class="three">
@@ -1376,6 +1397,7 @@ function askConfirm(message, okLabel='OK', danger=false){
   setTimeout(()=>ok.focus(), 30);
   return new Promise(res => { confirmResolve = res; });
 }
+window.plAskConfirm = askConfirm;   // the studio's Clear buttons use this too
 function answerConfirm(yes){
   $('#plConfirmScrim').classList.remove('open');
   const r = confirmResolve; confirmResolve = null; if(r) r(yes);
@@ -1388,6 +1410,7 @@ function bindGlobal(){
   $('#plNext').onclick = () => { cursor = view==='week' ? addDays(cursor,7) : new Date(cursor.getFullYear(), cursor.getMonth()+1, 1); render(); };
   $('#plToday').onclick = () => { cursor = today(); render(); };
   $('#plNewBtn').onclick = () => openNew(null);
+  $('#plRemPill').onclick = e => { e.stopPropagation(); const m = $('#plAcctMenu'); if(m){ m.hidden = false; } };
   $('#plBackupBtn').onclick = openBackup;
   $('#plDoBackup').onclick = doBackup;
   $('#plDoRestore').onclick = () => $('#plRestoreIn').click();
@@ -1436,52 +1459,62 @@ function bindGlobal(){
 
 // =========================================================================
 //  INSPO BOARD
-//  Save pictures/videos you love, recreate them, press Done, add your version,
-//  and get an "inspo vs me" comparison image to save or send to the planner.
-//  Items are { kind:'inspo', slides:[inspo, mine?], note, status:'todo'|'done' }.
+//  A feed of pictures/videos to recreate later. "Mark as recreated" toggles an
+//  item done (butter ✓ over it, tap again to undo). "+ add my version" attaches
+//  what they made; hover (laptop) or tap (phone) on the picture reveals it.
+//  Items: { kind:'inspo', slides:[inspo, mine?], note, status:'todo'|'done' }
+//  stored with the planner posts (same IndexedDB store / Supabase table).
 // =========================================================================
-let inspoFilter = 'todo';
-let doneId = null, doneLayout = 'side', doneLabels = true;
+let inspoFilter = 'all';
+let mineFor = null;     // which item "+ add my version" is uploading for
+const HOVER = window.matchMedia && matchMedia('(hover: hover)').matches;   // laptop mouse vs. phone touch
 
 function renderInspo(){
   if(!inInspo() || !me) return;
+  renderMemo();
   const all = inspos().sort((a,b) => (b.created||0) - (a.created||0));
   const todo = all.filter(p => p.status!=='done'), done = all.filter(p => p.status==='done');
   const list = inspoFilter==='todo' ? todo : inspoFilter==='done' ? done : all;
   $('#insStats').innerHTML = `<span class="stat"><b>${todo.length}</b> to recreate</span><span class="stat"><b>${done.length}</b> recreated</span>`;
   $$('#insFilter button').forEach(b => b.classList.toggle('on', b.dataset.f===inspoFilter));
-  const pill = $('#plSync'), mirror = $('#insSync'); if(pill && mirror){ mirror.textContent = pill.textContent; mirror.className = pill.className; }
   const v = $('#insView');
   if(!all.length){
     v.innerHTML = `<div class="ins-empty">
       <div class="ins-empty-art"><span></span><span></span><span></span></div>
       <h3>Save ideas now, recreate them later</h3>
-      <p>Spotted a look you love on Pinterest, Instagram or in your camera roll? Save it here so the idea never gets lost. When you've recreated it, hit the big <b>✓ Done</b> and get an <b>inspo vs me</b> post ready to share.</p>
+      <p>Spotted a look you love on Pinterest, Instagram or in your camera roll? Save it here so the idea never gets lost. Once you've recreated it, mark it as recreated and add your version to see them together.</p>
       <button class="btn primary" id="insEmptyAdd">+ Save your first idea</button></div>`;
     $('#insEmptyAdd').onclick = () => { uploadMode='inspo'; $('#plFileIn').click(); };
     return;
   }
   if(!list.length){
-    v.innerHTML = `<div class="ins-empty small"><p>${inspoFilter==='done' ? 'Nothing recreated yet. Press <b>Done ✓</b> on an inspo once you’ve recreated it.' : 'All recreated! ✨ Save more ideas with <b>+ Save an idea</b>.'}</p></div>`;
+    v.innerHTML = `<div class="ins-empty small"><p>${inspoFilter==='done'
+      ? 'Nothing recreated yet. When you’ve made one, tap <b>Mark as recreated</b> on its card.'
+      : 'Everything here is recreated ✨ Save more ideas with <b>+ Save an idea</b>.'}</p></div>`;
     return;
   }
-  v.innerHTML = `<div class="ins-grid">${list.map(insCard).join('')}</div>`;
+  // as many columns as there are ideas, up to 5, so a small board doesn't look empty and stretched
+  v.innerHTML = `<div class="ins-grid" style="--n:${Math.min(list.length, 5)}">${list.map(insCard).join('')}</div>`;
 }
 
 function insCard(p){
   const a = p.slides[0], b = p.slides[1], done = p.status==='done';
-  const ratio = a && a.w && a.h ? `${a.w}/${a.h}` : '4/5';
-  const media = done && b
-    ? `<div class="ins-pair" data-compare="${p.id}" title="Open comparison"><div>${thumbHTML(a)}<span class="ins-tag">inspo</span></div><div>${thumbHTML(b)}<span class="ins-tag me">me</span></div></div>`
-    : `<div class="ins-one" style="aspect-ratio:${ratio}">${thumbHTML(a)}${a && a.type==='video' ? '<span class="ins-play">▶</span>' : ''}</div>`;
+  // sensible card shapes: very tall uploads show 3:5, very wide 3:2; the picture fills the frame (cropped, never squashed)
+  const r = a && a.w && a.h ? Math.min(1.5, Math.max(0.6, a.w / a.h)) : 0.8;
+  const reveal = done && b;
   return `<div class="ins-card ${done?'done':''}" data-id="${p.id}">
-    ${media}
+    <div class="ins-one ${reveal ? 'has-mine' : ''}" style="aspect-ratio:${r.toFixed(3)}"${reveal && !HOVER ? ` data-reveal="${p.id}"` : ''}>
+      ${thumbHTML(a)}${a && a.type==='video' ? '<span class="ins-play">▶</span>' : ''}
+      ${reveal ? `<div class="ins-mine">${thumbHTML(b)}<span class="ins-tag me">me</span></div><span class="ins-hint">${HOVER ? 'hover' : 'tap'} to see yours</span>` : ''}
+      ${done ? '<div class="ins-ck" aria-label="Recreated"><span>✓</span></div>' : ''}
+    </div>
     <div class="ins-meta">
       <input class="ins-note" data-note="${p.id}" value="${esc(p.note||'')}" placeholder="idea note… (what to recreate, where it's from)" maxlength="140">
-      ${done
-        ? `<div class="ins-done-state"><span class="ck">✓</span><span>Recreated</span><span class="spacer"></span>${b ? `<button class="btn small" data-compare="${p.id}">Compare</button>` : `<button class="btn small" data-done="${p.id}">+ My version</button>`}</div>`
-        : `<button class="ins-check" data-done="${p.id}" title="I recreated this!"><span class="ck">✓</span><span>Done</span></button>`}
-      <div class="ins-sub"><span>saved ${savedAgo(p.created)}</span><button class="ins-del-link" data-del="${p.id}">remove</button></div>
+      <button class="ins-toggle ${done?'on':''}" data-toggle="${p.id}" aria-pressed="${done}" title="${done ? 'Recreated: click to undo' : 'Tick this once you\u2019ve recreated it'}">
+        <span class="box">${done ? '✓' : ''}</span><span>${done ? 'Recreated' : 'Mark as recreated'}</span>
+      </button>
+      <div class="ins-sub"><span>saved ${savedAgo(p.created)}</span>
+        <span class="ins-links">${done ? `<button class="ins-link" data-mine="${p.id}">${b ? 'change mine' : '+ my version'}</button>` : ''}<button class="ins-link del" data-del="${p.id}">remove</button></span></div>
     </div></div>`;
 }
 
@@ -1498,127 +1531,68 @@ function addInspoItems(slides){
       slides:[s], thumb:null, created:now + i, updatedAt:now, dirty:true, synced:false, orphans:[] };
     store.push(it); touch(it);
   });
-  inspoFilter = 'todo'; renderInspo();
-  toast(slides.length > 1 ? `${slides.length} ideas saved ✨` : 'Idea saved ✨ Recreate it whenever you\u2019re ready, then hit ✓ Done');
+  if(inspoFilter==='done') inspoFilter = 'all';
+  renderInspo();
+  toast(slides.length > 1 ? `${slides.length} ideas saved ✨` : 'Idea saved ✨ Recreate it whenever you’re ready');
 }
 
-function openDone(id){
+function toggleRecreated(id){
   const p = inspos().find(x => x.id===id); if(!p) return;
-  doneId = id;
-  const hasMine = !!p.slides[1];
-  $('#insDoneTitle').textContent = hasMine ? 'Inspo vs me' : 'Nice! Add your version';
-  $('#insStep1').hidden = hasMine; $('#insStep2').hidden = !hasMine;
-  if(hasMine) renderCompare(); else $('#insS1Inspo').innerHTML = thumbHTML(p.slides[0]);
-  $('#insDoneScrim').classList.add('open');
+  const nowDone = p.status!=='done';
+  p.status = nowDone ? 'done' : 'todo'; touch(p); renderInspo();
+  toast(nowDone ? (p.slides[1] ? '✓ Recreated!' : '✓ Recreated! Add your version from the card if you like') : 'Moved back to “to recreate”');
 }
 
 function setMyVersion(slide){
-  const p = inspos().find(x => x.id===doneId); if(!p || !slide) return;
+  const p = inspos().find(x => x.id===mineFor); mineFor = null;
+  if(!p || !slide) return;
   if(p.slides[1]) dropSlide(p, p.slides[1]);
   p.slides = [p.slides[0], slide];
-  p.status = 'done'; touch(p);
-  $('#insDoneTitle').textContent = 'Inspo vs me';
-  $('#insStep1').hidden = true; $('#insStep2').hidden = false;
-  renderCompare(); renderInspo();
-  toast('✓ Recreated! Here’s your inspo vs me');
+  p.status = 'done'; touch(p); renderInspo();
+  toast(`Your version is added ✓ ${HOVER ? 'Hover over' : 'Tap'} the picture to see it`);
 }
 
-// draw an image into a box, filling it (crops the overflow), like CSS object-fit: cover
-function coverDraw(ctx, img, x, y, w, h){
-  const iw = img.width, ih = img.height, sc = Math.max(w/iw, h/ih);
-  const sw = w/sc, sh = h/sc, sx = (iw - sw)/2, sy = (ih - sh)/2;
-  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+// ---- sticky note ("remember") ----
+const memoRec = () => owned().filter(p => p.kind==='memo').sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0))[0];
+function renderMemo(){
+  const ta = $('#insMemo'); if(!ta || document.activeElement===ta) return;   // never overwrite while typing
+  const r = memoRec(); ta.value = r ? (r.note || '') : '';
 }
-async function bitmapFor(s){
-  // full image if this device has it; otherwise (and for videos) the preview frame
-  const blob = s && (s.type==='image' && s.blob ? s.blob : s.preview);
-  if(!blob) return null;
-  try{ return await createImageBitmap(blob); }catch(e){ return null; }
-}
-async function renderCompare(){
-  const p = inspos().find(x => x.id===doneId); if(!p || !p.slides[1]) return;
-  const c = $('#insCmp'), ctx = c.getContext('2d');
-  const side = doneLayout==='side';
-  c.width = 1080; c.height = side ? 1350 : 1920;
-  const gap = 8, W = c.width, H = c.height;
-  const boxes = side ? [[0,0,(W-gap)/2,H], [(W+gap)/2,0,(W-gap)/2,H]] : [[0,0,W,(H-gap)/2], [0,(H+gap)/2,W,(H-gap)/2]];
-  ctx.fillStyle = '#f6f3ec'; ctx.fillRect(0,0,W,H);
-  const imgs = await Promise.all([bitmapFor(p.slides[0]), bitmapFor(p.slides[1])]);
-  imgs.forEach((img, i) => {
-    const [x,y,w,h] = boxes[i];
-    if(img) coverDraw(ctx, img, x, y, w, h); else { ctx.fillStyle = '#2a2720'; ctx.fillRect(x,y,w,h); }
-  });
-  if(doneLabels){
-    ['INSPO','ME'].forEach((t, i) => {
-      const [x,y] = boxes[i];
-      ctx.font = '600 30px "IBM Plex Mono", monospace';
-      const tw = ctx.measureText(t).width, px = x + 28, py = y + 28;
-      ctx.fillStyle = 'rgba(22,20,15,.78)';
-      ctx.beginPath(); ctx.roundRect(px, py, tw + 40, 52, 26); ctx.fill();
-      ctx.fillStyle = '#F5E3A3'; ctx.textBaseline = 'middle'; ctx.fillText(t, px + 20, py + 27);
-    });
+let memoTimer = null;
+function onMemoInput(e){
+  let r = memoRec();
+  if(!r){
+    r = { id:`notes-${me.id}`, owner:me.id, kind:'memo', note:'', status:'', date:iso(today()), time:'00:00', formats:[], caption:'', tags:'', title:'',
+      slides:[], thumb:null, created:Date.now(), updatedAt:Date.now(), dirty:true, synced:false, orphans:[] };
+    store.push(r);
   }
-  // small signature, bottom-right
-  ctx.font = '500 24px "Fraunces", serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 8;
-  ctx.fillText('✦ inspocult', W - 26, H - 24);
-  ctx.shadowBlur = 0; ctx.textAlign = 'left';
-}
-const cmpBlob = () => new Promise(res => $('#insCmp').toBlob(b => res(b), 'image/jpeg', 0.92));
-
-async function saveCompare(){
-  const blob = await cmpBlob(); if(!blob) return;
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `inspocult-inspo-vs-me-${iso(new Date())}.jpg`;
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
-  toast('Saved ✓');
-}
-async function compareToPlanner(){
-  const c = $('#insCmp'), blob = await cmpBlob(); if(!blob) return;
-  const preview = await previewFromSource(c, c.width, c.height);
-  const slide = { id:uid(), type:'image', mime:'image/jpeg', blob, preview, w:c.width, h:c.height, name:`inspocult-inspo-vs-me-${iso(new Date())}.jpg` };
-  const fm = doneLayout==='side' ? ['ig-post'] : ['ig-story'];
-  const post = newPost(nextEmptyDay(), fm, [slide], { caption:'inspo vs me ✨' });
-  store.push(post); touch(post); updateDueBadge();
-  toast(`Added to your planner on ${dayLabel(post.date)} 📅`);
+  r.note = e.target.value; touchSoon(r);
+  const st = $('#insMemoState'); st.textContent = 'saving\u2026';
+  clearTimeout(memoTimer); memoTimer = setTimeout(() => { st.textContent = 'saved to your account'; }, 1400);
 }
 
 function bindInspo(){
+  $('#insMemo').addEventListener('input', onMemoInput);
   $('#insAddBtn').onclick = () => { uploadMode='inspo'; $('#plFileIn').click(); };
   $$('#insFilter button').forEach(b => b.onclick = () => { inspoFilter = b.dataset.f; renderInspo(); });
   const v = $('#insView');
   v.addEventListener('click', async e => {
-    const d = e.target.closest('[data-done]'); if(d){ openDone(d.dataset.done); return; }
-    const c = e.target.closest('[data-compare]'); if(c){ openDone(c.dataset.compare); return; }
+    const t = e.target.closest('[data-toggle]'); if(t){ toggleRecreated(t.dataset.toggle); return; }
+    const m = e.target.closest('[data-mine]'); if(m){ mineFor = m.dataset.mine; uploadMode='inspoMine'; $('#plFileIn').click(); return; }
     const x = e.target.closest('[data-del]');
     if(x){
       const p = inspos().find(i => i.id===x.dataset.del); if(!p) return;
-      if(!(await askConfirm('Remove this inspo from your board?', 'Remove', true))) return;
+      if(!(await askConfirm('Remove this idea from your board?', 'Remove', true))) return;
       p.slides.forEach(forgetURLs); p.deleted = true;
       if(p.synced) touch(p); else { store = store.filter(i => i!==p); delLocal(p.id); }
-      renderInspo();
+      renderInspo(); return;
     }
+    const rv = e.target.closest('[data-reveal]'); if(rv) rv.classList.toggle('reveal');   // phones: tap to see yours
   });
   v.addEventListener('input', e => {
     const n = e.target.closest('[data-note]'); if(!n) return;
     const p = inspos().find(i => i.id===n.dataset.note); if(p){ p.note = n.value; touchSoon(p); }
   });
-  $('#insMineUp').onclick = () => { uploadMode='inspoMine'; $('#plFileIn').click(); };
-  $('#insReplace').onclick = () => { uploadMode='inspoMine'; $('#plFileIn').click(); };
-  $('#insMineStudio').onclick = async () => {
-    const btn = $('#insMineStudio'); btn.disabled = true; btn.textContent = 'Capturing…';
-    try{ setMyVersion(await captureStudio('png')); }
-    catch(err){ console.error(err); toast('Couldn’t capture the studio design', true); }
-    btn.disabled = false; btn.textContent = '✦ Use my studio design';
-  };
-  $('#insJustDone').onclick = () => {
-    const p = inspos().find(x => x.id===doneId); if(!p) return;
-    p.status = 'done'; touch(p); closeModals(); renderInspo(); toast('✓ Marked as recreated');
-  };
-  $$('#insLayout button').forEach(b => b.onclick = () => { doneLayout = b.dataset.l; $$('#insLayout button').forEach(x => x.classList.toggle('on', x===b)); renderCompare(); });
-  $('#insLabels').onchange = e => { doneLabels = e.target.checked; renderCompare(); };
-  $('#insSave').onclick = saveCompare;
-  $('#insToPlanner').onclick = compareToPlanner;
 }
 
 // ---------- boot ----------
