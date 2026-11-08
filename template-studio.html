@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5886701157179675"
-     crossorigin="anonymous"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>inspocult — easy template studio</title>
-<!-- TODO (site owner): replace ca-pub-0000000000000000 with your real AdSense
-     publisher ID once your AdSense account is approved. Nothing below can
-     earn real money until this is a real, approved account. -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000" crossorigin="anonymous"></script>
+<!-- PWA: lets this be "installed" to a phone's home screen with its own icon
+     and a full-screen, no-browser-chrome launch. -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1710">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="inspocult">
+<!-- AdSense publisher ID: ca-pub-4805663093054929 (real). The data-ad-slot
+     values further down are still placeholders until AdSense gives real slot IDs. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4805663093054929" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="planner.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Pacifico&family=Playfair+Display:wght@400;600;700&family=Bebas+Neue&family=Caveat:wght@500;700&family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&family=Anton&family=Abril+Fatface&family=Lobster&family=Dancing+Script:wght@500;700&family=Fredoka:wght@400;500;600;700&family=Archivo+Black&family=Courier+Prime:wght@400;700&family=Yellowtail&family=Josefin+Sans:wght@400;500;600;700&family=Great+Vibes&family=Italianno&family=Chewy&family=Patrick+Hand&family=Press+Start+2P&family=VT323&family=Kalam:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#16140f;
     --paper:#f6f3ec;
-    --paper-dim:#eeead f;
+    --paper-dim:#eeeadf;
     --line:#ddd6c4;
     --gold:#c9a227;
     --gold-dim:#e8d48a;
@@ -40,7 +47,9 @@
     font-family:var(--body);
     overflow:hidden;
   }
-  #app{ display:grid; grid-template-rows:56px 1fr; height:100vh; }
+  /* position:fixed + inset:0 (instead of height:100vh) so the app still fills the
+     screen when AdSense Auto ads injects height:auto !important on #app/#main. */
+  #app{ display:grid; grid-template-rows:56px minmax(0,1fr); position:fixed; inset:0; }
 
   /* ---------- Top bar ---------- */
   #topbar{
@@ -70,7 +79,10 @@
   .btn.small{ padding:5px 8px; font-size:10.5px;}
 
   /* ---------- Layout ---------- */
-  #main{ display:grid; grid-template-columns:216px 1fr 296px; height:100%; overflow:hidden; }
+  #main{ display:grid; grid-template-columns:216px 1fr 296px; grid-template-rows:minmax(0,1fr); min-height:0; height:100%; overflow:hidden; }
+
+  /* ---------- Mobile tab bar (hidden on desktop) ---------- */
+  #mobileTabs{ display:none; }
 
   /* ---------- Left: template filmstrip ---------- */
   #templates{
@@ -188,6 +200,49 @@
   #fsAdProgressTrack{ height:4px; background:#0e0d0a; border-radius:2px; overflow:hidden; }
   #fsAdProgressBar{ height:100%; width:100%; background:var(--brand-pink); transform-origin:left; }
   #fsAdCountdownText{ font-family:var(--mono); font-size:11px; color:#8b856f; margin-top:12px; }
+/* =============== MOBILE (phones & narrow tablets) =============== */
+@media (max-width: 860px){
+  #app{ grid-template-rows:auto auto minmax(0,1fr); }
+
+  #topbar{ flex-wrap:wrap; row-gap:8px; padding:10px 12px; }
+  #brand{ font-size:16px; }
+  #brand small{ display:none; } /* saves space on a narrow bar */
+  .top-group{ gap:6px; }
+  select#aspect{ font-size:11px; padding:6px 8px; }
+
+  #mobileTabs{
+    display:flex; background:var(--panel); border-bottom:1px solid var(--panel-line);
+  }
+  #mobileTabs .mtab{
+    flex:1; padding:12px 6px; background:none; border:none; border-bottom:2px solid transparent;
+    color:#8b856f; font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  }
+  #mobileTabs .mtab.active{ color:var(--gold-dim); border-bottom-color:var(--gold); }
+
+  /* flex column (not height:100%) so the panel's height never depends on its
+     content in iPhone Safari, and the canvas area itself never scrolls */
+  #main{ display:flex; flex-direction:column; min-height:0; overflow:hidden; position:relative; }
+  #templates, #stage-wrap, #right{
+    display:none; width:100%; flex:1 1 auto; min-height:0; border:none;
+  }
+  #main.show-stage-wrap #stage-wrap{ overflow:hidden; overscroll-behavior:none; }
+  #main.show-templates #templates{ display:block; }
+  #main.show-stage-wrap #stage-wrap{ display:flex; }
+  #main.show-right #right{ display:block; }
+
+  #stage-wrap{ padding:16px 16px 60px; }
+  #stageCaption{ display:none; } /* the long hint text doesn't fit small screens; the tap targets are still there */
+
+  /* Bigger touch targets throughout the properties panel */
+  .btn{ padding:11px 14px; font-size:12.5px; }
+  .btn.small{ padding:9px 10px; font-size:11.5px; }
+  .layout-btn{ width:48px; height:48px; }
+  input[type=text], textarea.propbox, input[type=number], select{ padding:10px; font-size:14px; }
+  .tpl-card{ padding:12px; }
+
+  /* Selection handles are easier to grab on a small touch screen when a bit bigger —
+     handled in JS (HANDLE_R) rather than here, since they're drawn on canvas. */
+}
 </style>
 </head>
 <body>
@@ -209,6 +264,12 @@
       </select>
     </div>
     <input type="file" id="fileInputBg" accept="image/*,video/*">
+  </div>
+
+  <div id="mobileTabs">
+    <button type="button" class="mtab" data-panel="templates">Templates</button>
+    <button type="button" class="mtab active" data-panel="stage-wrap">Canvas</button>
+    <button type="button" class="mtab" data-panel="right">Edit</button>
   </div>
 
   <div id="main">
@@ -294,7 +355,7 @@
         <div style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:#5a5442;text-transform:uppercase;margin-bottom:8px;">Advertisement</div>
         <ins class="adsbygoogle"
              style="display:block; min-height:100px;"
-             data-ad-client="ca-pub-0000000000000000"
+             data-ad-client="ca-pub-4805663093054929"
              data-ad-slot="0000000001"
              data-ad-format="auto"
              data-full-width-responsive="true"></ins>
@@ -405,7 +466,7 @@ function initPaywall(){
 // a file. ADS_ENABLED is a simple on/off switch.
 //
 // AD_SLOT_HTML holds a real Google AdSense ad unit. TODO (site owner):
-// replace ca-pub-0000000000000000 and data-ad-slot="0000000000" below with
+// replace data-ad-slot="0000000000" below with
 // your own AdSense publisher ID and ad unit slot ID (from your AdSense
 // account, after it's approved) — this placeholder cannot earn real money
 // as-is. You can also swap this whole block for a direct sponsor's image+link
@@ -427,7 +488,7 @@ const AD_SKIP_AFTER_S = 2; // how long before the "Skip ad" button appears
 const AD_SLOT_HTML = `
   <ins class="adsbygoogle"
        style="display:block"
-       data-ad-client="ca-pub-0000000000000000"
+       data-ad-client="ca-pub-4805663093054929"
        data-ad-slot="0000000000"
        data-ad-format="auto"
        data-full-width-responsive="true"></ins>
@@ -500,7 +561,9 @@ let activeBgUploadIndex = 0;
 function setBgLayout(layout){
   const need = LAYOUTS[layout].length;
   const cells = [];
-  for(let i=0;i<need;i++) cells.push(bg.cells[i] || makeBgCell());
+  const tpl = TEMPLATES.find(t=>t.key===currentTplKey);
+  const fresh = ()=>{ const c = makeBgCell(); if(tpl && tpl.bgColor){ c.color = tpl.bgColor; c.tplColor = true; } return c; };
+  for(let i=0;i<need;i++) cells.push(bg.cells[i] || fresh());
   bg.cells.slice(need).forEach(c=>{ if(c.type==='video' && c.el) c.el.pause(); });
   bg.layout = layout; bg.cells = cells;
   selectedId = '__bg_0'; repositionId = null;
@@ -569,6 +632,12 @@ function mk(type, props){ return Object.assign({ id:nextId(), type, rotation:0, 
 
 function buildTemplates(){
   return [
+
+  // ---------- Blank (Frame 01) ----------
+  // White comes from the background itself (bgColor), not a rectangle element,
+  // so "Upload photo / video" (which fills the background) isn't hidden behind it.
+  { key:'blank', name:'White Canvas', desc:'A plain white page. Add your own photos, text and icons.', bgColor:'#ffffff',
+    build(){ return []; }},
 
   // ---------- iOS / App / Window UI mockups ----------
   { key:'gallery', name:'Gallery Window', desc:'App window with numbered thumbnail rail + main photo + caption bar.',
@@ -2269,6 +2338,13 @@ function loadTemplate(key){
   const tpl = TEMPLATES.find(t=>t.key===key);
   if(!tpl) return;
   currentTplKey = key;
+  // Templates may set a background colour (e.g. White Canvas). Empty background
+  // cells take it; colours a template set get reset when switching to one without.
+  bg.cells.forEach(c=>{
+    if(c.type!=='none') return;
+    if(tpl.bgColor){ c.color = tpl.bgColor; c.tplColor = true; }
+    else if(c.tplColor){ c.color = makeBgCell().color; c.tplColor = false; }
+  });
   elements = tpl.build().map((e,i)=>({...e, z: e.z*10+i}));
   selectedId = null;
   const layerList = document.getElementById('layerList');
@@ -2322,7 +2398,7 @@ function getOrCreateThumbCanvas(key){
 // always looks exactly like actually opening that template.
 function drawTemplateThumbnail(t, tctx){
   tctx.clearRect(0,0,200,250);
-  tctx.fillStyle = '#0e0d0a'; tctx.fillRect(0,0,200,250);
+  tctx.fillStyle = t.bgColor || '#0e0d0a'; tctx.fillRect(0,0,200,250);
   if(t.key === currentTplKey){
     const geos = LAYOUTS[bg.layout];
     geos.forEach((geo, idx)=>{
@@ -2680,7 +2756,8 @@ const ROTATE_HANDLE_DIST = 28;
 function canvasPos(evt){
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
-  return { x:(evt.clientX-rect.left)*scaleX, y:(evt.clientY-rect.top)*scaleY };
+  const point = (evt.touches && evt.touches[0]) || (evt.changedTouches && evt.changedTouches[0]) || evt;
+  return { x:(point.clientX-rect.left)*scaleX, y:(point.clientY-rect.top)*scaleY };
 }
 
 // Rotate point (px,py) around (cx,cy) by angleRad, for translating between
@@ -2700,7 +2777,10 @@ function rotateHandlePos(el){
 }
 
 function hitHandle(el, pos){
-  const b = elBounds(el); const hs=14;
+  const b = elBounds(el);
+  const rect = canvas.getBoundingClientRect();
+  const scale = canvas.width / rect.width; // canvas px per on-screen px
+  const hs = Math.max(14, 22 * scale); // keep at least ~22 screen px of grab radius so it's usable on a small phone screen
   const rad = (el.rotation||0)*Math.PI/180;
   const cx=b.x+b.w/2, cy=b.y+b.h/2;
   const corners = { tl:[b.x,b.y], tr:[b.x+b.w,b.y], bl:[b.x,b.y+b.h], br:[b.x+b.w,b.y+b.h] };
@@ -2734,7 +2814,8 @@ function hitElement(pos){
 // has access to block that.
 canvas.addEventListener('contextmenu', (e)=> e.preventDefault());
 
-canvas.addEventListener('mousedown', (e)=>{
+function handleCanvasDown(e){
+  if(e.type==='touchstart') e.preventDefault();
   const pos = canvasPos(e);
 
   if(repositionId){
@@ -2762,7 +2843,9 @@ canvas.addEventListener('mousedown', (e)=>{
     const sel = elements.find(x=>x.id===selectedId);
     if(sel){
       const rotHandle = rotateHandlePos(sel);
-      if(Math.hypot(pos.x-rotHandle.x, pos.y-rotHandle.y) < 14){
+      const rotRect = canvas.getBoundingClientRect();
+      const rotHs = Math.max(14, 22 * (canvas.width / rotRect.width));
+      if(Math.hypot(pos.x-rotHandle.x, pos.y-rotHandle.y) < rotHs){
         drag = { mode:'rotate', target:sel.id };
         return;
       }
@@ -2780,20 +2863,25 @@ canvas.addEventListener('mousedown', (e)=>{
     repositionId = null;
   }
   renderLayerList(); renderProps(); draw();
-});
+}
+canvas.addEventListener('mousedown', handleCanvasDown);
+canvas.addEventListener('touchstart', handleCanvasDown, {passive:false});
 
-// Clicking the empty area around the canvas (not the artboard itself) deselects
-// whatever's currently selected, same as clicking away in any design tool.
-document.getElementById('stage-wrap').addEventListener('mousedown', (e)=>{
+// Clicking (or tapping) the empty area around the canvas (not the artboard itself)
+// deselects whatever's currently selected, same as clicking away in any design tool.
+function handleStageWrapDown(e){
   if(e.target.id === 'stage-wrap'){
     selectedId = null;
     repositionId = null;
     renderLayerList(); renderProps(); draw();
   }
-});
+}
+document.getElementById('stage-wrap').addEventListener('mousedown', handleStageWrapDown);
+document.getElementById('stage-wrap').addEventListener('touchstart', handleStageWrapDown);
 
-window.addEventListener('mousemove',(e)=>{
+function handlePointerMove(e){
   if(!drag) return;
+  if(e.type==='touchmove') e.preventDefault(); // stop the page scrolling while actively dragging/resizing on touch
   const pos = canvasPos(e);
 
   if(drag.mode==='pan'){
@@ -2849,10 +2937,15 @@ window.addEventListener('mousemove',(e)=>{
   // since the bounding box used for snapping is axis-aligned).
   activeGuides = (!el.rotation && (drag.mode==='move'||drag.mode==='resize')) ? applySnapping(el) : [];
   draw();
-});
-window.addEventListener('mouseup', ()=>{ if(drag){ drag=null; activeGuides=[]; draw(); renderProps(); } });
+}
+window.addEventListener('mousemove', handlePointerMove);
+window.addEventListener('touchmove', handlePointerMove, {passive:false});
 
-canvas.addEventListener('dblclick',(e)=>{
+function handlePointerUp(){ if(drag){ drag=null; activeGuides=[]; draw(); renderProps(); } }
+window.addEventListener('mouseup', handlePointerUp);
+window.addEventListener('touchend', handlePointerUp);
+
+function handleCanvasDblClick(e){
   const pos = canvasPos(e);
   const hit = hitElement(pos);
   if(hit){
@@ -2868,6 +2961,22 @@ canvas.addEventListener('dblclick',(e)=>{
   repositionId = null;
   renderLayerList(); renderProps();
   document.getElementById('fileInputBg').click();
+}
+canvas.addEventListener('dblclick', handleCanvasDblClick);
+
+// Double-tap-to-edit for touch devices, since "dblclick" doesn't fire on touch.
+let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
+canvas.addEventListener('touchend', (e)=>{
+  const t = (e.changedTouches && e.changedTouches[0]) || null;
+  if(!t) return;
+  const now = Date.now();
+  const dist = Math.hypot(t.clientX-lastTapX, t.clientY-lastTapY);
+  if(now - lastTapTime < 350 && dist < 24){
+    handleCanvasDblClick(e);
+    lastTapTime = 0;
+  } else {
+    lastTapTime = now; lastTapX = t.clientX; lastTapY = t.clientY;
+  }
 });
 
 function openInlineEditor(el){
@@ -2893,6 +3002,7 @@ function openInlineEditor(el){
 }
 
 window.addEventListener('keydown',(e)=>{
+  if(document.getElementById('app').classList.contains('planner-mode')) return; // planner is open; canvas is hidden
   if((e.key==='Delete'||e.key==='Backspace') && selectedId && document.activeElement.tagName!=='TEXTAREA' && document.activeElement.tagName!=='INPUT'){
     elements = elements.filter(x=>x.id!==selectedId);
     selectedId = null;
@@ -3188,6 +3298,7 @@ function duplicateElement(el){
 window.addEventListener('keydown', (e)=>{
   const tag = document.activeElement && document.activeElement.tagName;
   if(tag==='TEXTAREA' || tag==='INPUT') return; // let native text copy/paste work
+  if(document.getElementById('app').classList.contains('planner-mode')) return; // planner is open; canvas is hidden
   const mod = e.metaKey || e.ctrlKey;
   if(mod && (e.key==='c' || e.key==='C')){
     const el = elements.find(x=>x.id===selectedId);
@@ -3231,15 +3342,34 @@ document.getElementById('aspect').addEventListener('change', (e)=>{
   fitStage(); draw();
 });
 function fitStage(){
-  const maxW = document.getElementById('stage-wrap').clientWidth - 60;
-  const maxH = document.getElementById('stage-wrap').clientHeight - 60;
-  const scale = Math.min(maxW/W, maxH/H, 1);
-  canvas.style.width = (W*scale)+'px';
-  canvas.style.height = (H*scale)+'px';
-  stage.style.width = (W*scale)+'px';
-  stage.style.height = (H*scale)+'px';
+  const wrap = document.getElementById('stage-wrap');
+  // Hidden (e.g. another mobile tab is open) -> nothing to measure yet; the
+  // ResizeObserver below re-runs this as soon as the stage becomes visible.
+  if(wrap.clientWidth === 0 || wrap.clientHeight === 0) return;
+  // Subtract the wrap's REAL padding (it differs on phones), so the canvas always
+  // fits inside without making the area scroll. A scrolling area on iPhone makes
+  // Safari's toolbar hide/show, which resizes the page, which re-fits the canvas…
+  // in a loop: the "shaking canvas" bug.
+  const cs = getComputedStyle(wrap);
+  const maxW = wrap.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 4;
+  const maxH = wrap.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 4;
+  const scale = Math.max(0.05, Math.min(maxW/W, maxH/H, 1));
+  const w = Math.floor(W*scale), h = Math.floor(H*scale);   // whole pixels: no sub-pixel back-and-forth
+  if(canvas.style.width === w+'px' && canvas.style.height === h+'px') return; // nothing changed
+  canvas.style.width = w+'px';
+  canvas.style.height = h+'px';
+  stage.style.width = w+'px';
+  stage.style.height = h+'px';
 }
 window.addEventListener('resize', fitStage);
+// Also re-fit whenever the stage area itself changes size (mobile tab switches,
+// panels showing/hiding, ads changing the layout) — window 'resize' misses those.
+// Batched to once per frame so a burst of size changes can't feed back on itself.
+let fitQueued = false;
+if(window.ResizeObserver) new ResizeObserver(()=>{
+  if(fitQueued) return; fitQueued = true;
+  requestAnimationFrame(()=>{ fitQueued = false; fitStage(); });
+}).observe(document.getElementById('stage-wrap'));
 
 // =========================== EXPORT =======================================
 const statusEl = document.getElementById('exportStatus');
@@ -3323,11 +3453,10 @@ document.getElementById('expGif').onclick = ()=>{
   });
 };
 
-document.getElementById('expMp4').onclick = ()=>{
-  runExportAd(async ()=>{
-  selectedId=null;
-  setExportingUI(true); setProgress(1);
-  try{
+// Records the canvas as a video and resolves to { blob, mime, ext }. Used by the
+// MP4 export button and by the planner's "Add to planner" (video option).
+async function recordCanvasVideo(){
+    selectedId=null;
     const fps = 30;
     const stream = canvas.captureStream(fps);
     let mime = 'video/webm;codecs=vp9';
@@ -3335,7 +3464,6 @@ document.getElementById('expMp4').onclick = ()=>{
     else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) mime = 'video/webm;codecs=vp9';
     else mime = 'video/webm';
     const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
-    setStatus('Recording ('+ext.toUpperCase()+')…');
 
     const chunks = [];
     const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
@@ -3371,11 +3499,20 @@ document.getElementById('expMp4').onclick = ()=>{
     }
     await done;
     const blob = new Blob(chunks, { type: mime.split(';')[0] });
+    draw();
+    if(vids.length){ vids.forEach(v=>{ v.loop = true; v.play(); }); videoLoop(); }
+    return { blob, mime: mime.split(';')[0], ext };
+}
+
+document.getElementById('expMp4').onclick = ()=>{
+  runExportAd(async ()=>{
+  setExportingUI(true); setProgress(1);
+  setStatus('Recording…');
+  try{
+    const { blob, ext } = await recordCanvasVideo();
     download(URL.createObjectURL(blob), 'inspocult.'+ext);
     setStatus((ext==='mp4'?'MP4':'WebM (this browser can\u2019t encode MP4 directly — WebM plays everywhere and opens fine in editors)')+' saved.');
     setProgress(0); setExportingUI(false);
-    draw();
-    if(vids.length){ vids.forEach(v=>{ v.loop = true; v.play(); }); videoLoop(); }
   }catch(err){
     console.error(err);
     setStatus('Video export failed — see console.'); setProgress(0); setExportingUI(false);
@@ -3396,7 +3533,7 @@ document.getElementById('layersToggle').addEventListener('click', ()=>{
   chevron.textContent = nowOpen ? '▾' : '▸';
 });
 renderTplList();
-loadTemplate('gallery');
+loadTemplate('blank');
 refreshBgLayoutButtons();
 fitStage();
 initPaywall();
@@ -3404,6 +3541,32 @@ initPaywall();
 // since the adsbygoogle script only actually does anything once a real,
 // approved AdSense publisher ID replaces the placeholder above.
 try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(err) {}
+
+// ---- Mobile tab bar: only one of Templates / Canvas / Edit shows at a time
+// on narrow screens (see the max-width:860px media query). On desktop the
+// CSS for these classes is a no-op, so this is harmless either way.
+const mainEl = document.getElementById('main');
+mainEl.classList.add('show-stage-wrap'); // start on the canvas, same as desktop
+document.querySelectorAll('#mobileTabs .mtab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#mobileTabs .mtab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    mainEl.classList.remove('show-templates','show-stage-wrap','show-right');
+    mainEl.classList.add('show-'+btn.dataset.panel);
+    if(btn.dataset.panel==='stage-wrap') fitStage(); // re-fit now that the canvas is actually visible again
+  });
+});
+
+// Registering this is what lets a browser offer "Add to Home Screen" / "Install
+// app" — wrapped in a feature check + try/catch since it's a no-op on browsers
+// that don't support it, and on file:// (only works once actually hosted).
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{ /* fine on file:// or unsupported browsers */ });
+  });
+}
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="planner.js"></script>
 </body>
 </html>
