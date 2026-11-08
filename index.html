@@ -119,6 +119,44 @@
     .visual{ order:-1; max-width:280px; margin:0 auto; }
   }
 
+  /* ---- planner intro ---- */
+  .planner-sec{ padding:40px 0 100px; border-top:1px solid var(--line); }
+  .planner-grid{ display:grid; grid-template-columns:.95fr 1.05fr; gap:64px; align-items:center; }
+  .new-tag{ display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:.12em; background:var(--brand-pink); color:var(--brand-pink-text); padding:2px 8px; border-radius:4px; margin-right:6px; }
+  h2.sec-title{ font-family:var(--display); font-weight:600; font-size:clamp(30px, 3.6vw, 44px); line-height:1.1; margin:0 0 18px; }
+  h2.sec-title em{ font-style:italic; color:var(--brand-sage); }
+  .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:30px 0 26px; }
+  .step{ background:#2f2a1d; border:1px solid #443f2d; border-radius:12px; padding:16px 16px 18px; }
+  .step .n{ font-family:var(--mono); font-size:11px; color:var(--gold-dim); letter-spacing:.1em; }
+  .step h3{ font-family:var(--display); font-weight:600; font-size:17px; margin:6px 0 6px; color:var(--paper); }
+  .step p{ margin:0; font-size:13px; line-height:1.55; color:#b9b39e; }
+
+  /* little week-calendar illustration (pure CSS) */
+  .week-demo{ background:#1c1a14; border:1px solid #443f2d; border-radius:16px; padding:16px; box-shadow:0 40px 90px -30px rgba(0,0,0,.7); transform:rotate(-2deg); }
+  .wd-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-family:var(--display); font-size:17px; }
+  .wd-head span{ font-family:var(--mono); font-size:10px; color:#9fd3a2; }
+  .wd-days{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .wd-day{ background:#24211a; border:1px solid #332f22; border-radius:8px; padding:6px 5px 8px; min-height:170px; display:flex; flex-direction:column; gap:6px; }
+  .wd-day b{ font-family:var(--mono); font-size:9px; font-weight:500; color:#8b856f; letter-spacing:.08em; }
+  .wd-day.today{ border-color:var(--gold); }
+  .wd-post{ border-radius:5px; aspect-ratio:4/5; position:relative; }
+  .wd-post.tall{ aspect-ratio:9/14; }
+  .wd-post i{ position:absolute; left:3px; bottom:3px; font-style:normal; font-family:var(--mono); font-size:7.5px; padding:1px 3px; border-radius:2px; }
+  .wd-post .ig{ background:#f3c1d6; color:#5c2035; }
+  .wd-post .tt{ background:#bfe7e4; color:#173f3c; }
+  .wd-post .yt{ background:#f5c7b8; color:#5a2414; }
+  .wd-post.multi{ box-shadow:3px -3px 0 -1px #5a5136; }
+  .wd-copy{ display:flex; gap:8px; margin-top:12px; }
+  .wd-copy span{ flex:1; text-align:center; font-family:var(--mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; padding:7px 4px; border-radius:6px; border:1px solid #443f2d; color:#c9c3ad; }
+  .wd-copy span.pk{ background:var(--brand-pink); color:var(--brand-pink-text); border-color:var(--brand-pink); }
+
+  @media (max-width: 860px){
+    .planner-grid{ grid-template-columns:1fr; gap:48px; }
+    .steps{ grid-template-columns:1fr; }
+    .week-demo{ transform:none; }
+    .wd-day{ min-height:120px; }
+  }
+
   /* ---------- Bottom ad (one banner per page / tab) ---------- */
   .site-ad-bar{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 12px 10px; border-top:1px solid #332f22; background:#1c1a14; }
   .site-ad-label{ font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:#5a5442; }
@@ -135,8 +173,11 @@
 
   <div class="wrap">
     <nav>
-      <div class="brand"><span class="dot"></span>inspocult <small>easy template studio</small></div>
-      <a class="tryit" href="template-studio.html">Open the studio →</a>
+      <a class="brand" href="index.html" style="text-decoration:none"><span class="dot"></span>inspocult <small>easy template studio</small></a>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+        <a class="tryit" href="#planner">Planner</a>
+        <a class="tryit" href="template-studio.html">Open the studio →</a>
+      </div>
     </nav>
 
     <div class="hero">
@@ -151,6 +192,7 @@
           <span class="pill">✏️ easy to edit</span>
           <span class="pill">💯 +100 templates</span>
           <span class="pill">💾 save in seconds</span>
+          <span class="pill">📅 content planner</span>
         </div>
         <p class="sub" style="font-size:15px; margin-top:-6px;">Ideal for content creators and easy editing — perfect for Instagram, TikTok, YouTube, banners, and anything that helps grow your business.</p>
         <div class="ctas">
@@ -167,6 +209,37 @@
         <div class="badge-float">✦ 100+ templates, more regularly</div>
       </div>
     </div>
+
+    <section class="planner-sec" id="planner">
+      <div class="planner-grid">
+        <div>
+          <div class="eyebrow"><span class="new-tag">NEW</span> CONTENT PLANNER</div>
+          <h2 class="sec-title">Plan the whole week<br><em>in one sitting.</em></h2>
+          <p class="sub">No time to post every day? Batch it. Pick one day a week, prepare every post with its caption and hashtags, and drop them into your calendar. On the day, open the planner, copy, paste, done.</p>
+          <div class="steps">
+            <div class="step"><div class="n">01</div><h3>Create</h3><p>Design in the studio and press <b>Add to planner</b>, or upload photos and videos you already have. Carousels included.</p></div>
+            <div class="step"><div class="n">02</div><h3>Schedule</h3><p>Drop posts into a week or month calendar. Write captions and hashtags. Sizes are checked for Instagram, TikTok and YouTube.</p></div>
+            <div class="step"><div class="n">03</div><h3>Post</h3><p>On the day: download the media, copy the caption, copy the hashtags, paste into the app. Mark it posted.</p></div>
+          </div>
+          <div class="pills">
+            <span class="pill">🗓 week &amp; month view</span>
+            <span class="pill">▦ Instagram &amp; TikTok feed preview</span>
+            <span class="pill">▣ carousels</span>
+            <span class="pill">☁ saved to your free account</span>
+          </div>
+          <div class="ctas">
+            <a class="btn primary" href="template-studio.html#planner">Try the planner, it's free</a>
+          </div>
+          <p class="fineprint">Free account with email and password. Your plans sync across your devices; only small previews are stored, never your full-size files.</p>
+        </div>
+
+        <div class="week-demo" aria-hidden="true">
+          <div class="wd-head">9 – 15 Nov <span>✓ Synced</span></div>
+          <div class="wd-days"><div class="wd-day"><b>MON</b><div class="wd-post " style="background:linear-gradient(160deg,#f6efe4,#e2cfb6)"><i class="ig">IG</i></div><div class="wd-post tall" style="background:linear-gradient(160deg,#3f6b5f,#1f2b28)"><i class="tt">TT</i></div></div><div class="wd-day"><b>TUE</b><div class="wd-post multi" style="background:linear-gradient(160deg,#fde7ef,#ffd1dc)"><i class="ig">IG</i></div></div><div class="wd-day"><b>WED</b><div class="wd-post tall" style="background:linear-gradient(160deg,#dfe8d6,#a8bfa0)"><i class="ig">IG</i></div></div><div class="wd-day"><b>THU</b><div class="wd-post tall" style="background:linear-gradient(160deg,#fce38a,#f3c86b)"><i class="tt">TT</i></div></div><div class="wd-day"><b>FRI</b><div class="wd-post multi" style="background:linear-gradient(160deg,#5b4a3a,#2b2620)"><i class="ig">IG</i></div></div><div class="wd-day"><b>SAT</b><div class="wd-post " style="background:linear-gradient(160deg,#e9e1f5,#c7b8e6)"><i class="yt">YT</i></div></div><div class="wd-day today"><b>SUN</b></div></div>
+          <div class="wd-copy"><span>⬇ Media</span><span class="pk">⧉ Caption</span><span class="pk">⧉ Hashtags</span></div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <div class="site-ad-bar">

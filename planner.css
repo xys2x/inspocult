@@ -239,6 +239,11 @@
 .pl .acct-dot.error{ background:var(--red); }
 .pl .acct-menu{ position:absolute; top:42px; right:0; width:250px; background:var(--panel); border:1px solid var(--panel-line); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px; z-index:950; box-shadow:0 20px 40px -10px rgba(0,0,0,.6); }
 .pl .acct-menu[hidden]{ display:none; }
+.pl .acct-delete{ background:none; border:none; padding:4px 0 0; margin-top:2px; border-top:1px solid var(--panel-line); text-align:left; font-family:var(--mono); font-size:10.5px; color:#8b856f; cursor:pointer; }
+.pl .acct-delete:hover{ color:var(--warn); }
+.pl .del-confirm{ display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--muted); }
+.pl .del-confirm input{ background:var(--ink); color:var(--paper); border:1px solid var(--panel-line); border-radius:6px; padding:10px 11px; font-family:var(--mono); font-size:14px; letter-spacing:.1em; }
+.pl .del-confirm input:focus{ outline:none; border-color:var(--red); }
 .pl .acct-email{ font-size:12.5px; font-weight:600; word-break:break-all; }
 .pl .acct-sync{ font-size:11px; color:var(--muted); line-height:1.4; }
 .pl .sync-pill{ font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.04em; }

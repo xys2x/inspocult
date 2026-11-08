@@ -57,7 +57,8 @@
     padding:0 18px; border-bottom:1px solid var(--panel-line);
     background:var(--panel);
   }
-  #brand{ font-family:var(--display); font-size:19px; letter-spacing:.01em; display:flex; align-items:center; gap:8px; color:var(--brand-yellow);}
+  #brand{ font-family:var(--display); font-size:19px; letter-spacing:.01em; display:flex; align-items:center; gap:8px; color:var(--brand-yellow); text-decoration:none;}
+  #brand:hover{ opacity:.85; }
   #brand .dot{ width:8px;height:8px;border-radius:50%; background:var(--gold); display:inline-block;}
   #brand small{ font-family:var(--mono); font-size:10px; color:#8b856f; text-transform:uppercase; letter-spacing:.12em; margin-left:2px;}
   .spacer{flex:1;}
@@ -246,7 +247,7 @@
 <div id="app">
 
   <div id="topbar">
-    <div id="brand"><span class="dot"></span>inspocult <small>easy template studio</small></div>
+    <a id="brand" href="index.html" title="Back to the inspocult home page"><span class="dot"></span>inspocult <small>easy template studio</small></a>
     <div id="trialBadge" class="top-group" style="display:none;"></div>
     <div class="spacer"></div>
     <div class="top-group">
@@ -3480,6 +3481,15 @@ document.querySelectorAll('#mobileTabs .mtab').forEach(btn=>{
 // Registering this is what lets a browser offer "Add to Home Screen" / "Install
 // app" — wrapped in a feature check + try/catch since it's a no-op on browsers
 // that don't support it, and on file:// (only works once actually hosted).
+// Leaving the studio (e.g. clicking the inspocult logo) would lose an unsaved
+// design, so once someone has worked on the canvas, the browser asks first.
+// The planner is saved continuously, so it never needs this.
+let designTouched = false;
+['pointerdown','input','change'].forEach(ev => document.getElementById('main').addEventListener(ev, e => {
+  if(e.target.closest && e.target.closest('#stage-wrap, #right')) designTouched = true;
+}, true));
+window.addEventListener('beforeunload', e => { if(designTouched){ e.preventDefault(); e.returnValue = ''; } });
+
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('sw.js').catch(()=>{ /* fine on file:// or unsupported browsers */ });

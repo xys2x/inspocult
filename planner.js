@@ -427,6 +427,60 @@ async function logOut(){
   toast(wipe ? 'Logged out and removed from this computer' : 'Logged out');
 }
 
+// ----- delete account -----
+// 1) delete the preview images (Storage API), 2) call the delete_my_account()
+// database function (supabase-delete-account.sql), which removes the posts,
+// settings and the login, 3) remove everything from this computer, 4) sign out.
+function openDeleteAccount(){
+  $('#plDelEmail').textContent = me.email;
+  $('#plDelConfirm').value = ''; $('#plDelGo').disabled = true;
+  $('#plDelErr').textContent = ''; $('#plDelGo').textContent = 'Delete my account';
+  $('#plDeleteScrim').classList.add('open');
+  setTimeout(()=>$('#plDelConfirm').focus(), 50);
+}
+async function deleteAccount(){
+  if(!me || !sb) return;
+  const btn = $('#plDelGo'), err = $('#plDelErr');
+  err.textContent = ''; btn.disabled = true;
+  const step = t => { btn.textContent = t; };
+  const uid = me.id;
+  clearTimeout(pushTimer);
+  try{
+    // 1) preview images: everything in this person's folder (paged, 100 at a time)
+    step('Deleting images…');
+    for(;;){
+      const { data:files, error } = await sb.storage.from(PREVIEW_BUCKET).list(uid, { limit:100 });
+      if(error) throw error;
+      if(!files || !files.length) break;
+      const { error:rmErr } = await sb.storage.from(PREVIEW_BUCKET).remove(files.map(f => `${uid}/${f.name}`));
+      if(rmErr) throw rmErr;
+      if(files.length < 100) break;
+    }
+    // 2) posts, settings and the login itself
+    step('Deleting account…');
+    const { error } = await sb.rpc('delete_my_account');
+    if(error) throw error;
+  } catch(ex){
+    console.error('delete account', ex);
+    const m = (ex && ex.message) || String(ex);
+    err.textContent = /delete_my_account|Could not find the function|PGRST202/i.test(m)
+      ? 'Account deletion isn’t switched on yet (the site owner needs to run supabase-delete-account.sql). Nothing was deleted from your planner.'
+      : /Failed to fetch|network/i.test(m) ? 'Can’t reach the server. Check your internet connection and try again.'
+      : 'Something went wrong: ' + m;
+    btn.textContent = 'Delete my account'; btn.disabled = $('#plDelConfirm').value.trim().toUpperCase() !== 'DELETE';
+    return;
+  }
+  // 3) this computer's copy
+  step('Cleaning up…');
+  for(const p of store.filter(p => p.owner===uid)){ p.slides.forEach(forgetURLs); forgetURLs(p.thumb); await delLocal(p.id); }
+  store = store.filter(p => p.owner!==uid);
+  await kvSet('oldPosts:'+uid, undefined); await kvSet('lastBackup:'+uid, undefined);
+  // 4) sign out locally (the login no longer exists on the server)
+  try{ await sb.auth.signOut({ scope:'local' }); }catch(e){}
+  closeModals(); onSignedOut();
+  toast('Your account and planner have been deleted.');
+}
+
 let afterLogin = null;   // what to do once the user logs in (open planner / add to planner)
 function requireLogin(then){
   if(me){ then(); return; }
@@ -495,8 +549,10 @@ function renderAccount(){
       <div class="acct-sync" id="plAcctSync"></div>
       <button class="btn small" id="plSyncNow">⟳ Sync now</button>
       <button class="btn small" id="plLogoutBtn">Log out</button>
+      <button class="acct-delete" id="plDeleteAcctBtn">Delete account…</button>
     </div>`;
   setSync(syncState, syncMsg);
+  $('#plDeleteAcctBtn').onclick = () => { $('#plAcctMenu').hidden = true; openDeleteAccount(); };
   $('#plAcctBtn').onclick = e => { e.stopPropagation(); $('#plAcctMenu').hidden = !$('#plAcctMenu').hidden; };
   $('#plSyncNow').onclick = async () => { $('#plAcctMenu').hidden = true; await pushAll(); await pullAll(true); };
   $('#plLogoutBtn').onclick = () => { $('#plAcctMenu').hidden = true; $('#plLogoutWipe').checked = false; $('#plLogoutEmail').textContent = me.email; $('#plLogoutScrim').classList.add('open'); };
@@ -554,6 +610,15 @@ function injectUI(){
       <div class="modal-foot"><button type="button" class="btn" data-close>Not now</button><button type="submit" class="btn primary" id="plLoginGo">Log in</button></div>
     </form>
     <p class="fine">The studio stays free to use without an account. Your account only stores your planner: post details and small preview images.</p>
+  </div></div>
+
+  <div class="pl-scrim pl" id="plDeleteScrim"><div class="modal">
+    <h3>Delete your account?</h3>
+    <p>This permanently deletes the account <b id="plDelEmail"></b>, every post in your planner, and all its preview images, on every device. <b style="color:var(--paper)">It can’t be undone.</b></p>
+    <p>Want to keep a copy of your plans first? <button class="btn tiny" id="plDelBackup">⬇ Download a backup</button></p>
+    <label class="del-confirm"><span>Type <b>DELETE</b> to confirm</span><input type="text" id="plDelConfirm" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+    <div class="hint warn" id="plDelErr" role="alert"></div>
+    <div class="modal-foot"><button class="btn" data-close>Cancel</button><button class="btn primary danger-solid" id="plDelGo" disabled>Delete my account</button></div>
   </div></div>
 
   <div class="pl-scrim pl" id="plLogoutScrim"><div class="modal">
@@ -1219,6 +1284,10 @@ function bindGlobal(){
   $$('#plLoginTabs button').forEach(b => b.onclick = () => setLoginMode(b.dataset.lm));
   $('#plLoginForm').onsubmit = submitLogin;
   $('#plLogoutGo').onclick = logOut;
+  $('#plDelConfirm').oninput = e => { $('#plDelGo').disabled = e.target.value.trim().toUpperCase() !== 'DELETE'; };
+  $('#plDelConfirm').onkeydown = e => { if(e.key==='Enter' && !$('#plDelGo').disabled){ e.preventDefault(); deleteAccount(); } };
+  $('#plDelGo').onclick = deleteAccount;
+  $('#plDelBackup').onclick = doBackup;
   $('#plConfirmOk').onclick = () => answerConfirm(true);
   $('#plConfirmCancel').onclick = () => answerConfirm(false);
   $('#plConfirmScrim').addEventListener('click', e => { if(e.target.id==='plConfirmScrim') answerConfirm(false); });
@@ -1278,6 +1347,8 @@ async function boot(){
   }
   renderAccount();
   render();
+  // links like template-studio.html#planner (from the home page) open straight on the Planner
+  if(location.hash === '#planner') switchTab('planner');
 }
 boot();
 })();
