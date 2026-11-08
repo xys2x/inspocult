@@ -27,11 +27,11 @@
 .pl-switch .due:not([hidden]){ display:inline-block; min-width:16px; padding:0 4px; margin-left:5px; border-radius:8px; background:var(--brand-pink); color:var(--brand-pink-text); font-size:9.5px; line-height:15px; }
 
 /* Planner mode: hide the studio, show the planner in the same grid row */
-#app.planner-mode{ grid-template-rows:56px minmax(0,1fr); }
+#app.planner-mode{ grid-template-rows:56px minmax(0,1fr) auto; }
 #app.planner-mode #main, #app.planner-mode #mobileTabs, #app.planner-mode .studio-only{ display:none !important; }
 #planner{ display:none; }
 #app.planner-mode #planner{ display:grid; }
-@media (max-width:860px){ #app.planner-mode{ grid-template-rows:auto minmax(0,1fr); } }
+@media (max-width:860px){ #app.planner-mode{ grid-template-rows:auto minmax(0,1fr) auto; } }
 
 /* segmented control */
 .pl .seg{ display:inline-flex; border:1px solid var(--panel-line); border-radius:8px; overflow:hidden; background:var(--ink); }
@@ -39,7 +39,7 @@
 .pl .seg button.on{ background:var(--gold); color:var(--ink); font-weight:500; }
 
 /* ---------- Planner layout ---------- */
-#planner{ grid-template-rows:auto minmax(0,1fr) auto; min-height:0; background:var(--site-bg); }
+#planner{ grid-template-rows:auto minmax(0,1fr); min-height:0; background:var(--site-bg); }
 .pl .p-head{ display:flex; align-items:center; gap:14px; padding:14px 22px; border-bottom:1px solid var(--panel-line); background:#201e18; flex-wrap:wrap; }
 .pl .p-title{ font-family:var(--display); font-size:22px; min-width:190px; }
 .pl .p-title small{ display:block; font-family:var(--mono); font-size:10.5px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-top:2px; }
@@ -258,19 +258,6 @@
 .pl .check input{ margin-top:3px; }
 .pl .preview-only{ position:absolute; top:6px; left:6px; z-index:1; font-family:var(--mono); font-size:9.5px; background:rgba(22,20,15,.78); color:#fff; padding:2px 6px; border-radius:3px; }
 .pl .btn:disabled{ opacity:.35; cursor:not-allowed; }
-
-/* ---------- ads ----------
-   The .ad-ph placeholder shows the reserved space until Google fills it (before
-   AdSense approval, on localhost, or with an ad blocker). A filled ad covers it. */
-.pl-ad{ display:flex; flex-direction:column; align-items:center; gap:4px; }
-.pl-ad .ad-label{ font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:#5a5442; }
-.pl-ad .ad-box{ position:relative; max-width:100%; display:flex; align-items:center; justify-content:center; border:1px dashed #3d3826; border-radius:6px; overflow:hidden; }
-.pl-ad .ad-ph{ position:absolute; font-family:var(--mono); font-size:10px; color:#4a4533; letter-spacing:.06em; pointer-events:none; }
-.pl-ad ins.adsbygoogle{ position:relative; z-index:1; }
-.pl-ad ins.adsbygoogle[data-ad-status="filled"] ~ .ad-ph, .pl-ad .ad-box:has(ins[data-ad-status="filled"]) .ad-ph{ display:none; }
-.pl .pl-ad-bar{ padding:8px 16px 10px; border-top:1px solid var(--panel-line); background:#1c1a14; }
-/* keep ads out of the way on short laptop screens */
-@media (max-height:700px){ .pl .pl-ad-bar{ padding:4px 16px 6px; } }
 
 /* in-app confirm dialog (sits above any other planner window) */
 #plConfirmScrim{ z-index:960; }

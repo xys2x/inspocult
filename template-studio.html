@@ -49,7 +49,7 @@
   }
   /* position:fixed + inset:0 (instead of height:100vh) so the app still fills the
      screen when AdSense Auto ads injects height:auto !important on #app/#main. */
-  #app{ display:grid; grid-template-rows:56px minmax(0,1fr); position:fixed; inset:0; }
+  #app{ display:grid; grid-template-rows:56px minmax(0,1fr) auto; position:fixed; inset:0; }
 
   /* ---------- Top bar ---------- */
   #topbar{
@@ -185,24 +185,21 @@
   #trialBadge.trialing{ color:var(--gold-dim); border:1px solid #4a4322; background:#2a2617; }
   .pw-eyebrow{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--red); margin-bottom:10px; }
 
-  /* ---------- Full-screen export ad (blocks editing while it's shown) ---------- */
-  #fullscreenAd{
-    display:none; position:fixed; inset:0; z-index:10000;
-    background:rgba(10,9,6,.92); backdrop-filter:blur(3px);
-    align-items:center; justify-content:center; padding:20px;
-  }
-  #fullscreenAdCard{
-    max-width:420px; width:100%; background:var(--panel); border:1px solid var(--panel-line);
-    border-radius:14px; padding:28px; box-shadow:0 30px 70px -20px rgba(0,0,0,.7); text-align:center;
-  }
-  #fsAdSlot{ font-family:var(--body); font-size:13.5px; color:#c9c3ad; line-height:1.6; margin:14px 0 20px; }
-  #fsAdSlot a{ color:var(--brand-sage); }
-  #fsAdProgressTrack{ height:4px; background:#0e0d0a; border-radius:2px; overflow:hidden; }
-  #fsAdProgressBar{ height:100%; width:100%; background:var(--brand-pink); transform-origin:left; }
-  #fsAdCountdownText{ font-family:var(--mono); font-size:11px; color:#8b856f; margin-top:12px; }
+
+  /* ---------- Bottom ad (one banner per page / tab) ---------- */
+  .site-ad-bar{ display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 12px 10px; border-top:1px solid #332f22; background:#1c1a14; }
+  .site-ad-label{ font-family:'IBM Plex Mono', monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:#5a5442; }
+  .site-ad-box{ position:relative; display:flex; align-items:center; justify-content:center; max-width:100%; outline:1px dashed #3d3826; outline-offset:-1px; border-radius:6px; overflow:hidden; }
+  .site-ad-box, .site-ad{ width:728px; height:90px; }
+  .site-ad{ display:inline-block; position:relative; z-index:1; flex-shrink:0; }
+  .site-ad-ph{ position:absolute; font-family:'IBM Plex Mono', monospace; font-size:10px; color:#4a4533; letter-spacing:.06em; pointer-events:none; }
+  .site-ad-box:has(.site-ad[data-ad-status="filled"]) .site-ad-ph{ display:none; }
+  .site-ad-box:has(.site-ad[data-ad-status="filled"]){ outline-color:transparent; }
+  @media (max-width:760px){ .site-ad-box, .site-ad{ width:320px; height:50px; } .site-ad-bar{ padding:5px 8px 6px; } }
+
 /* =============== MOBILE (phones & narrow tablets) =============== */
 @media (max-width: 860px){
-  #app{ grid-template-rows:auto auto minmax(0,1fr); }
+  #app{ grid-template-rows:auto auto minmax(0,1fr) auto; }
 
   #topbar{ flex-wrap:wrap; row-gap:8px; padding:10px 12px; }
   #brand{ font-size:16px; }
@@ -351,29 +348,18 @@
         <div id="exportStatus"></div>
       </div>
 
-      <div class="rsection">
-        <div style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:#5a5442;text-transform:uppercase;margin-bottom:8px;">Advertisement</div>
-        <ins class="adsbygoogle"
-             style="display:block; min-height:100px;"
-             data-ad-client="ca-pub-4805663093054929"
-             data-ad-slot="0000000001"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-      </div>
 
+    </div>
+  </div>
+
+  <div class="site-ad-bar" id="siteAdBar">
+    <div class="site-ad-label">Advertisement</div>
+    <div class="site-ad-box"><span class="site-ad-ph">Ad space</span>
+      <ins class="adsbygoogle site-ad" data-ad-client="ca-pub-4805663093054929" data-ad-slot="0000000002"></ins>
     </div>
   </div>
 </div>
 
-<div id="fullscreenAd">
-  <div id="fullscreenAdCard">
-    <div class="pw-eyebrow">ADVERTISEMENT</div>
-    <div id="fsAdSlot"></div>
-    <div id="fsAdProgressTrack"><div id="fsAdProgressBar"></div></div>
-    <div id="fsAdCountdownText">Your download starts in 5s…</div>
-    <button id="fsAdSkip" style="display:none;margin-top:14px;background:none;border:1px solid #4a4322;color:#c9c3ad;font-family:var(--mono);font-size:11px;padding:8px 16px;border-radius:6px;cursor:pointer;">Skip ad →</button>
-  </div>
-</div>
 
 <input type="file" id="fileInputImg" accept="image/*,video/*">
 <input type="file" id="fileInputRectFill" accept="image/*,video/*">
@@ -461,83 +447,12 @@ function initPaywall(){
   refreshPaywall();
 }
 
-// =========================== ADS (shown before every export) ==============
-// A full-screen sponsored interstitial shown every time someone saves/exports
-// a file. ADS_ENABLED is a simple on/off switch.
-//
-// AD_SLOT_HTML holds a real Google AdSense ad unit. TODO (site owner):
-// replace data-ad-slot="0000000000" below with
-// your own AdSense publisher ID and ad unit slot ID (from your AdSense
-// account, after it's approved) — this placeholder cannot earn real money
-// as-is. You can also swap this whole block for a direct sponsor's image+link
-// if you'd rather sell the placement yourself instead of using AdSense.
-//
-// Policy note: Google AdSense's ad policies require interstitial ads to be
-// easily dismissible and not trap the user, so this includes a "Skip ad"
-// button (appears after a couple seconds) rather than a purely forced wait —
-// worth keeping if you want to stay compliant with AdSense's placement rules.
-//
-// Note on screenshots: no website can block OS-level screenshots or screen
-// recording — there's no browser API that grants that. What's realistic and
-// implemented instead: the canvas disables the right-click "Save image as"
-// menu so casual users can't just save the image out that way, and the
-// ad gate below still stands between opening the app and every real export.
-const ADS_ENABLED = true;
-const AD_DURATION_S = 5;
-const AD_SKIP_AFTER_S = 2; // how long before the "Skip ad" button appears
-const AD_SLOT_HTML = `
-  <ins class="adsbygoogle"
-       style="display:block"
-       data-ad-client="ca-pub-4805663093054929"
-       data-ad-slot="0000000000"
-       data-ad-format="auto"
-       data-full-width-responsive="true"></ins>
-`;
-
-// Wraps an export/save action: shows a blocking full-screen ad first (with a
-// skip button once AD_SKIP_AFTER_S has passed), then the export runs.
-function runExportAd(proceed){
-  const state = getPlanState();
-  if(!ADS_ENABLED || state.purchased){ proceed(); return; }
-
-  const overlay = document.getElementById('fullscreenAd');
-  const slot = document.getElementById('fsAdSlot');
-  const bar = document.getElementById('fsAdProgressBar');
-  const countdownText = document.getElementById('fsAdCountdownText');
-  const skipBtn = document.getElementById('fsAdSkip');
-  slot.innerHTML = AD_SLOT_HTML;
-  try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(err) { /* AdSense script not loaded yet — slot just stays empty */ }
-  overlay.style.display = 'flex';
-  skipBtn.style.display = 'none';
-
-  let remaining = AD_DURATION_S;
-  let finished = false;
-  const finish = ()=>{
-    if(finished) return;
-    finished = true;
-    clearInterval(tick);
-    overlay.style.display = 'none';
-    proceed();
-  };
-  skipBtn.onclick = finish;
-
-  countdownText.textContent = `Your download starts in ${remaining}s…`;
-  bar.style.transition = 'none';
-  bar.style.transform = 'scaleX(1)';
-  requestAnimationFrame(()=>{
-    bar.style.transition = `transform ${AD_DURATION_S}s linear`;
-    bar.style.transform = 'scaleX(0)';
-  });
-  const tick = setInterval(()=>{
-    remaining -= 1;
-    if(remaining <= AD_DURATION_S - AD_SKIP_AFTER_S){ skipBtn.style.display = 'inline-block'; }
-    if(remaining > 0){
-      countdownText.textContent = `Your download starts in ${remaining}s…`;
-    } else {
-      finish();
-    }
-  }, 1000);
-}
+// =========================== EXPORTS ======================================
+// Exports (and planner downloads) start straight away. The old full-screen
+// countdown ad was removed: AdSense doesn't allow its ads in custom pop-ups or
+// making people wait on an ad. Ads now live in one bottom banner on every page.
+// The name is kept because the export buttons and planner.js call it.
+function runExportAd(proceed){ proceed(); }
 
 
 // ---- background media state ----
@@ -3537,7 +3452,7 @@ loadTemplate('blank');
 refreshBgLayoutButtons();
 fitStage();
 initPaywall();
-// Render the persistent sidebar banner ad once on load. Wrapped in try/catch
+// Load the bottom banner ad once on load (it stays put; ads are never refreshed by us). Wrapped in try/catch
 // since the adsbygoogle script only actually does anything once a real,
 // approved AdSense publisher ID replaces the placeholder above.
 try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(err) {}

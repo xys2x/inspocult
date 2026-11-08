@@ -17,11 +17,7 @@
 const SUPABASE_URL = 'https://tpjvspalsxdbutjqhovo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Ql_qLrRQV5zc4cSZoZ0gOw_-qhPTvDv';
 const PREVIEW_BUCKET = 'previews';
-
-// ---------- Planner ads (Google AdSense) ----------
-// Replace the two slot IDs with real ad unit IDs from AdSense → Ads → By ad unit.
-const AD_CLIENT = 'ca-pub-4805663093054929';
-const AD_SLOT_PLANNER_BANNER = '0000000002';   // wide banner under the calendar (728×90): the planner's only ad
+// Ads: the planner shares the studio's bottom banner (#siteAdBar in template-studio.html).
 const PREVIEW_MAX = 720;        // longest side of preview images, px
 const PREVIEW_QUALITY = 0.8;
 
@@ -540,11 +536,6 @@ function injectUI(){
         <div id="plDrawerIn"></div>
       </aside>
     </div>
-    <div class="pl-ad pl-ad-bar" id="plAdBar">
-      <div class="ad-label">Advertisement</div>
-      <div class="ad-box" style="width:728px;height:90px"><span class="ad-ph">Ad space · 728 × 90</span>
-        <ins class="adsbygoogle" style="display:inline-block;width:728px;height:90px" data-ad-client="${AD_CLIENT}" data-ad-slot="${AD_SLOT_PLANNER_BANNER}"></ins></div>
-    </div>
   </div>`);
 
   $('#expMp4').closest('.exportgrid').insertAdjacentHTML('afterend', `<button class="btn primary" id="addToPlannerBtn">📅 Add to planner</button>`);
@@ -631,21 +622,12 @@ function injectUI(){
   <input type="file" id="plRestoreIn" accept="application/json,.json" hidden>`);
 }
 
-// ---------- ads ----------
-const adsLoaded = new Set();
-function loadAd(id){
-  if(adsLoaded.has(id)) return;
-  const box = document.getElementById(id); if(!box || !box.offsetWidth) return;
-  adsLoaded.add(id);
-  try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) { /* AdSense not approved / blocked: placeholder stays */ }
-}
-
 // ---------- tabs ----------
 function switchTab(t){
   if(t==='planner' && !me){ requireLogin(() => switchTab('planner')); return; }
   $$('#plSwitch button').forEach(b => b.classList.toggle('on', b.dataset.tab===t));
   $('#app').classList.toggle('planner-mode', t==='planner');
-  if(t==='planner'){ render(); pullAll(); requestAnimationFrame(()=>loadAd('plAdBar')); }
+  if(t==='planner'){ render(); pullAll(); }
   else { requestAnimationFrame(()=>{ try{ fitStage(); draw(); }catch(e){} }); }
 }
 const inPlanner = () => $('#app').classList.contains('planner-mode');
