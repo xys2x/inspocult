@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Privacy Policy — inspocult</title>
+<meta name="description" content="How inspocult handles your data: the free template studio, planner accounts, and ads.">
+<link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -25,21 +27,27 @@
     background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.06) 1px, transparent 1px);
     background-size: 26px 26px;
   }
-  .wrap{ max-width:760px; margin:0 auto; padding:0 28px 100px; }
-  nav{ display:flex; align-items:center; justify-content:space-between; padding:26px 0; }
+  .wrap{ max-width:760px; margin:0 auto; padding:0 20px 100px; }
+  nav{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:26px 0; }
   .brand{ display:flex; align-items:center; gap:9px; font-family:var(--display); font-size:20px; color:var(--brand-yellow); text-decoration:none; }
   .brand .dot{ width:8px; height:8px; border-radius:50%; background:var(--gold); display:inline-block; }
   .brand small{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.14em; color:#8b856f; margin-left:4px; }
   nav a.back{ font-family:var(--mono); font-size:11.5px; color:#c9c3ad; text-decoration:none; border:1px solid var(--line); padding:9px 16px; border-radius:7px; }
   nav a.back:hover{ border-color:var(--gold); color:var(--gold-dim); }
-  h1{ font-family:var(--display); font-weight:600; font-size:38px; margin:20px 0 6px; }
+  h1{ font-family:var(--display); font-weight:600; font-size:38px; margin:20px 0 6px; line-height:1.2; }
   .updated{ font-family:var(--mono); font-size:11.5px; color:#8b856f; margin-bottom:44px; }
   h2{ font-family:var(--display); font-weight:600; font-size:21px; color:var(--gold-dim); margin:40px 0 12px; }
+  h3{ font-family:var(--body); font-weight:600; font-size:15px; color:var(--paper); margin:22px 0 6px; }
   p, li{ font-size:14.5px; color:#dcd6c4; }
   ul{ padding-left:20px; }
   li{ margin-bottom:8px; }
   a{ color:var(--brand-yellow); }
   .box{ background:#332f22; border:1px solid #443f2d; border-radius:12px; padding:20px 24px; margin:20px 0; }
+  .box ul{ margin:0; }
+  .table-wrap{ overflow-x:auto; margin:16px 0; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; min-width:520px; }
+  th, td{ text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid #443f2d; color:#dcd6c4; }
+  th{ font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#8b856f; font-weight:500; }
   footer{ font-family:var(--mono); font-size:11px; color:#5a5442; margin-top:60px; border-top:1px solid var(--line); padding-top:24px; }
 </style>
 </head>
@@ -51,43 +59,98 @@
     </nav>
 
     <h1>Privacy Policy</h1>
-    <p class="updated"><!-- TODO: update this date whenever you edit this page -->Last updated: [DATE]</p>
+    <p class="updated">Last updated: 8 November 2026</p>
 
-    <p>This page explains what information inspocult ("we", "us") collects when you use this website, and how it's used. inspocult is a free browser-based template editor — most of what you do happens locally in your own browser and is never sent to us.</p>
+    <p>This page explains what information inspocult ("we", "us") collects, why, where it's kept, and the choices you have. inspocult has two parts: the <b>template studio</b>, which works without an account, and the <b>content planner</b>, which needs a free account so your plans are saved and you can open them on any device.</p>
 
     <h2>The short version</h2>
     <div class="box">
-      <p style="margin:0;">We don't require an account, we don't ask for your photos or personal files (everything you upload stays in your browser and is never sent to a server), and we don't sell your data. This site shows ads through Google AdSense to stay free, and AdSense uses cookies to do that — details below, along with how to opt out.</p>
+      <ul>
+        <li><b>The studio needs no account.</b> Photos, videos and designs you make there stay in your browser and are never uploaded to us.</li>
+        <li><b>The planner needs an account</b> (email + password). We store your planned posts: dates, captions, hashtags, titles and <b>small preview images</b> (about 50 KB each). Your <b>full-size</b> photos and videos are <b>not</b> uploaded; they stay on the device where you made the post.</li>
+        <li><b>We don't sell your data</b> and we don't use your planner content for advertising.</li>
+        <li><b>The site shows ads</b> through Google AdSense to stay free. Google uses cookies for this, which you can control (details below).</li>
+        <li>You can ask us to <b>see, download or delete</b> your data at any time.</li>
+      </ul>
     </div>
 
-    <h2>Information we collect</h2>
-    <p>We do not require you to create an account or provide personal information to use inspocult. The photos, videos, and text you add inside the editor are processed entirely in your own browser and are not uploaded to or stored on our servers.</p>
-    <p>Like most websites, our hosting provider and analytics tools (if any are enabled) may automatically log standard technical information such as your IP address, browser type, device type, and pages visited, for security and basic usage statistics.</p>
+    <h2>Who is responsible for your data</h2>
+    <p>inspocult is the data controller for the information described here. You can reach us at <a href="mailto:inspocult@gmail.com">inspocult@gmail.com</a> for any privacy question or request.</p>
+
+    <h2>What we collect, and why</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Information</th><th>Why we use it</th><th>Legal basis (GDPR)</th></tr></thead>
+        <tbody>
+          <tr><td><b>Account:</b> your email address and password (stored only as a secure hash, never readable by us)</td><td>To create your account, log you in and keep your planner private to you</td><td>Providing the service you asked for (contract)</td></tr>
+          <tr><td><b>Planner content:</b> post dates and times, chosen platforms and formats, captions, hashtags, YouTube titles, status, the original file names, and small preview images of your slides; plus any "current posts" images you add to the feed preview</td><td>To save your planner to your account and show it on every device you log in to</td><td>Providing the service you asked for (contract)</td></tr>
+          <tr><td><b>Technical data:</b> IP address, browser and device type, times of access, error logs</td><td>Security, preventing abuse, and keeping the service running. Recorded automatically by our hosting and database providers</td><td>Our legitimate interest in a secure, working service</td></tr>
+          <tr><td><b>Advertising cookies and identifiers</b> (set by Google)</td><td>Showing ads that keep inspocult free, and measuring them</td><td>Your consent, where the law requires it</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>We don't ask for, and you shouldn't put in captions or planner notes, sensitive information such as health data, passwords for other services, or payment details.</p>
+
+    <h2>What stays on your device</h2>
+    <p>Some data is stored only in your own browser and never sent to us:</p>
+    <ul>
+      <li>Everything you do in the <b>studio</b> (your photos, videos, text and designs) until you choose to export it.</li>
+      <li>The <b>full-size</b> images and videos of your planned posts, kept in your browser's storage on the computer or phone where you made the post, so you can download them at posting time.</li>
+      <li>A login token that keeps you signed in, and a few preferences.</li>
+    </ul>
+    <p>You can remove these by logging out and ticking <i>"Also remove my planner and full-size files from this computer"</i>, or by clearing your browser's site data. Planner <b>backup files</b> you download are saved on your device and are entirely under your control.</p>
+
+    <h2>Where your data is kept, and who helps us</h2>
+    <p>We use a small number of trusted service providers ("processors") who handle data on our behalf, under contracts that require them to protect it:</p>
+    <ul>
+      <li><b>Supabase</b> stores accounts and planner data (including preview images). Our database is hosted in the <b>European Union (Ireland)</b>.</li>
+      <li><b>GitHub Pages</b> hosts the website files and may log technical data such as IP addresses.</li>
+      <li><b>Google</b> (AdSense) serves ads; <b>Google Fonts</b> and <b>jsDelivr</b> deliver fonts and code libraries the site needs. These services receive your IP address when your browser loads them.</li>
+    </ul>
+    <p>Some of these providers are based in, or may process data in, countries outside the European Economic Area (for example the United States). When that happens, they rely on approved safeguards such as the EU Standard Contractual Clauses or the EU–U.S. Data Privacy Framework.</p>
 
     <h2>Cookies and advertising (Google AdSense)</h2>
-    <p>This site uses Google AdSense to display ads. Google, as a third-party vendor, uses cookies (including the DoubleClick DART cookie) to serve ads based on your prior visits to this website or other websites on the internet.</p>
+    <p>This site uses Google AdSense to display ads. Google, as a third-party vendor, uses cookies and similar technologies to serve ads based on your visits to this site and other websites, and to measure ad performance.</p>
     <ul>
-      <li>Google's use of advertising cookies enables it and its partners to serve ads to you based on your visit to this site and/or other sites on the internet.</li>
-      <li>You may opt out of personalized advertising by visiting <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google's Ads Settings</a>.</li>
-      <li>Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info/choices" target="_blank" rel="noopener">www.aboutads.info/choices</a>.</li>
+      <li>Where the law requires it (for example in the EU, the UK and Switzerland), you'll be asked for <b>consent</b> before personalised ads are shown, and you can change your choice later.</li>
+      <li>You can opt out of personalised advertising at <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google's Ads Settings</a> or at <a href="https://www.aboutads.info/choices" target="_blank" rel="noopener">www.aboutads.info/choices</a>.</li>
+      <li>More detail: <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses information from sites that use its services</a>.</li>
     </ul>
-    <p>For more detail on how Google uses information from sites that use its services, see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Google's Partner Sites policy</a>.</p>
+    <p>We don't share your account email or planner content with Google or any advertiser.</p>
+
+    <h2>How long we keep it</h2>
+    <ul>
+      <li><b>Account and planner data:</b> for as long as you have an account. Posts you delete are removed from our database, together with their preview images, straight away.</li>
+      <li><b>When you delete your account:</b> we delete your account and all planner data within 30 days. Copies may remain in our provider's routine backups for a short time before being overwritten.</li>
+      <li><b>Technical logs:</b> kept by our providers for a limited period for security, then deleted.</li>
+    </ul>
+
+    <h2>Your rights</h2>
+    <p>Under data-protection law (including the GDPR) you have the right to:</p>
+    <ul>
+      <li><b>access</b> the data we hold about you, and get a copy (the planner's <i>Backup</i> button also lets you download your planner yourself);</li>
+      <li><b>correct</b> data that's wrong;</li>
+      <li><b>delete</b> your account and data;</li>
+      <li><b>object to</b> or <b>restrict</b> certain processing, and <b>withdraw consent</b> (for example for ad cookies) at any time;</li>
+      <li><b>data portability</b>: receive your data in a common, machine-readable format.</li>
+    </ul>
+    <p>To use any of these rights, including deleting your account, email <a href="mailto:inspocult@gmail.com">inspocult@gmail.com</a> from the address you signed up with. We'll reply within one month.</p>
+    <p>If you're unhappy with how we handle your data, you can complain to your local data-protection authority. In Portugal that's the <a href="https://www.cnpd.pt" target="_blank" rel="noopener">CNPD (Comissão Nacional de Proteção de Dados)</a>.</p>
+
+    <h2>Security</h2>
+    <p>Data travels over encrypted connections (HTTPS). Passwords are stored only as secure hashes. Our database uses access rules so that each account can only ever read or change its own planner data. No system is perfectly secure, so please use a password you don't use anywhere else.</p>
+
+    <h2>Children</h2>
+    <p>inspocult isn't intended for children. You must be at least 13 years old to create a planner account (or older if the law in your country requires it). We don't knowingly collect data from children under that age; if you believe a child has created an account, contact us and we'll delete it.</p>
 
     <h2>Third-party links</h2>
-    <p>This site may link out to third-party services (for example, if you choose to purchase a template add-on or contact us via email). We aren't responsible for the privacy practices of those third parties — please review their own privacy policies.</p>
-
-    <h2>Children's privacy</h2>
-    <p>inspocult is not directed at children under 13, and we do not knowingly collect personal information from children under 13.</p>
-
-    <h2>Your choices</h2>
-    <p>Because this app runs locally in your browser, you can clear your browser's local storage and cookies at any time to remove any locally-stored preferences (like which grid layout you last used). Doing so won't affect anything else on your device.</p>
+    <p>This site may link to other websites and services. We aren't responsible for their privacy practices, so please read their own policies.</p>
 
     <h2>Changes to this policy</h2>
-    <p>We may update this policy occasionally to reflect changes in our practices or for legal reasons. We'll update the "Last updated" date above when we do.</p>
+    <p>We may update this policy as inspocult changes or for legal reasons. We'll change the "Last updated" date above, and for important changes that affect account holders we'll let you know in the app or by email.</p>
 
     <h2>Contact</h2>
-    <!-- TODO: replace with your real contact email -->
-    <p>Questions about this policy? Reach out at <a href="mailto:youremail@example.com">youremail@example.com</a>.</p>
+    <p>Questions about this policy or your data? Email <a href="mailto:inspocult@gmail.com">inspocult@gmail.com</a>.</p>
 
     <footer>
       inspocult · easy template studio

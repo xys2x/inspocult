@@ -3547,6 +3547,11 @@ try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(err) {}
 // CSS for these classes is a no-op, so this is harmless either way.
 const mainEl = document.getElementById('main');
 mainEl.classList.add('show-stage-wrap'); // start on the canvas, same as desktop
+// The canvas area was hidden until the line above (on phones), so fit it now,
+// and again once fonts/images have loaded and the layout has settled.
+fitStage();
+requestAnimationFrame(fitStage);
+window.addEventListener('load', fitStage);
 document.querySelectorAll('#mobileTabs .mtab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('#mobileTabs .mtab').forEach(b=>b.classList.remove('active'));
