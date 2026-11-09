@@ -131,7 +131,25 @@
 .pl .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:2px; }
 .pl .tile{ aspect-ratio:3/4; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; background:#1c1c1c; }
 .pl .tile img, .pl .tile video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.pl .tile.planned::before{ content:""; position:absolute; inset:2px; border:2px dashed rgba(255,209,220,.9); z-index:1; pointer-events:none; }
+.pl .tile.from-plan::before{ content:""; position:absolute; inset:0; border:3px solid #FF8FB1; z-index:1; pointer-events:none; }
+.pl .tile.added::before{ content:""; position:absolute; inset:0; border:3px solid var(--gold); z-index:1; pointer-events:none; }
+.pl .tile[draggable="true"]{ cursor:grab; }
+.pl .tile.dragging{ opacity:.35; }
+.pl .tile .src{ position:absolute; left:5px; top:5px; z-index:2; font-family:var(--mono); font-size:8.5px; letter-spacing:.06em; text-transform:uppercase; line-height:1; padding:3px 5px; border-radius:4px; font-weight:600; }
+.pl .tile.from-plan .src{ background:#FF8FB1; color:#5c2035; }
+.pl .tile.added .src{ background:var(--gold); color:#292217; }
+.pl .tile .rm{ position:absolute; right:4px; bottom:4px; z-index:3; width:22px; height:22px; border-radius:50%; border:0; background:rgba(0,0,0,.72); color:#fff; font-size:14px; line-height:22px; padding:0; cursor:pointer; opacity:0; transition:opacity .15s; }
+.pl .tile:hover .rm{ opacity:1; }
+.pl .lg-plan{ border:2px solid #FF8FB1; background:#333; box-sizing:border-box; }
+.pl .lg-added{ border:2px solid var(--gold); background:#333; box-sizing:border-box; }
+.pl .feed-btns{ display:flex; gap:8px; }
+.pl .feed-btns .btn{ flex:1; justify-content:center; padding-left:8px; padding-right:8px; }
+.pl .pick-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-height:52vh; overflow:auto; }
+.pl .pick-grid p{ grid-column:1/-1; }
+.pl .pick{ position:relative; aspect-ratio:3/4; border:2px solid var(--panel-line); border-radius:8px; overflow:hidden; padding:0; background:#1c1c1c; cursor:pointer; }
+.pl .pick:hover{ border-color:#FF8FB1; }
+.pl .pick img, .pl .pick video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.pl .pick span{ position:absolute; left:4px; bottom:4px; font-family:var(--mono); font-size:9px; background:rgba(0,0,0,.72); color:#fff; padding:2px 5px; border-radius:3px; }
 .pl .tile.sel::before{ content:""; position:absolute; inset:0; border:3px solid var(--brand-pink); z-index:2; pointer-events:none; }
 .pl .tile.over{ filter:brightness(1.25); outline:3px solid var(--gold); outline-offset:-3px; }
 .pl .tile.old{ cursor:default; background:#262626; }

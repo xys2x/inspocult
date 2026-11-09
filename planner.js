@@ -339,7 +339,7 @@ let oldPostsDirty = false;
 async function saveOldPosts(){ await kvSet('oldPosts:'+me.id, oldPosts); oldPostsDirty = true; schedulePush(); }
 async function pushOldPosts(){
   for(const k of ['ig','tt']) for(const s of oldPosts[k]) await uploadPreview(s, 'old-');
-  const meta = { ig:oldPosts.ig.map(remoteSlide), tt:oldPosts.tt.map(remoteSlide) };
+  const meta = { ig:oldPosts.ig.map(remoteSlide), tt:oldPosts.tt.map(remoteSlide), layout:oldPosts.layout || {} };
   const { error } = await sb.from('planner_kv').upsert({ user_id:me.id, key:'oldPosts', value:meta, updated_at:new Date().toISOString() }, { onConflict:'user_id,key' });
   if(error) throw error;
   oldPostsDirty = false; await kvSet('oldPosts:'+me.id, oldPosts);
@@ -357,6 +357,7 @@ async function pullOldPosts(){
     if(!preview && m.previewPath){ const r = await sb.storage.from(PREVIEW_BUCKET).download(m.previewPath); if(!r.error) preview = r.data; }
     next[k].push({ ...m, preview });
   }
+  next.layout = data.value.layout || oldPosts.layout || {};
   oldPosts = next; await kvSet('oldPosts:'+me.id, oldPosts);
 }
 
@@ -808,6 +809,13 @@ function injectUI(){
     <div class="modal-foot"><button class="btn" data-close>Close</button></div>
   </div></div>
 
+  <div class="pl-scrim pl" id="plPickScrim"><div class="modal">
+    <h3>Add from your planner</h3>
+    <p>Click a post to put it in the feed preview.</p>
+    <div class="pick-grid" id="plPickGrid"></div>
+    <div class="modal-foot"><button class="btn" data-close>Done</button></div>
+  </div></div>
+
   <div class="pl-scrim pl" id="plConfirmScrim"><div class="modal confirm-modal" role="alertdialog" aria-modal="true">
     <p id="plConfirmMsg"></p>
     <div class="modal-foot"><button class="btn" id="plConfirmCancel">Cancel</button><button class="btn primary" id="plConfirmOk">OK</button></div>
@@ -910,19 +918,39 @@ function renderMonth(first){
   $('#plView').innerHTML = html + '</div>';
 }
 
+// The grid mixes two sources: posts from the planner and photos added straight to the
+// preview. Their order is free (drag to move) and kept in oldPosts.layout[plat].
+function feedLayout(plat){
+  oldPosts.layout = oldPosts.layout || {};
+  const L = oldPosts.layout[plat] = oldPosts.layout[plat] || {};
+  L.order = L.order || []; L.hidden = L.hidden || []; L.extra = L.extra || [];
+  return L;
+}
+function feedItems(plat){
+  const L = feedLayout(plat);
+  const planner = mine().filter(p => !L.hidden.includes(p.id) && (p.formats.some(k => GRID_FMTS[plat].includes(k)) || L.extra.includes(p.id)))
+                        .sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));   // newest = top-left
+  const byKey = new Map([...planner.map(p => ['p:'+p.id, { key:'p:'+p.id, kind:'plan', p }]),
+                         ...oldPosts[plat].map(o => ['a:'+o.id, { key:'a:'+o.id, kind:'added', o }])]);
+  const placed = L.order.filter(k => byKey.has(k));
+  const newPlan = planner.map(p => 'p:'+p.id).filter(k => !placed.includes(k));      // new planner posts go on top
+  const newAdded = oldPosts[plat].map(o => 'a:'+o.id).filter(k => !placed.includes(k));   // new photos go at the end
+  L.order = [...newPlan, ...placed, ...newAdded];
+  return L.order.map(k => byKey.get(k));
+}
 function renderFeed(){
   const ig = feedPlat==='ig';
-  const list = mine().filter(p => p.formats.some(k => GRID_FMTS[feedPlat].includes(k)))
-                     .sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));   // newest = top-left
-  const tile = p => {
-    const s = p.slides[0], planned = p.status!=='posted';
+  const items = feedItems(feedPlat);
+  const tile = it => {
+    if(it.kind==='added') return `<div class="tile added" draggable="true" data-key="${it.key}" title="Added photo · drag to move">
+      ${thumbHTML(it.o)}<span class="src">added</span><button class="rm" data-rmkey="${it.key}" title="Remove from the preview">×</button></div>`;
+    const p = it.p, s = p.slides[0], planned = p.status!=='posted';
     const icon = isCarousel(p) ? '▣' : (s && s.type==='video' && ig) ? '▶' : '';
-    return `<div class="tile ${planned?'planned':''} ${p.id===selId?'sel':''}" draggable="true" data-id="${p.id}" title="${dayLabel(p.date)} · ${esc(p.time)} · ${p.status}">
-      ${thumbHTML(s)}${icon?`<span class="ic">${icon}</span>`:''}${planned?`<span class="when">${dayLabel(p.date)}</span>`:''}</div>`;
+    return `<div class="tile from-plan ${p.id===selId?'sel':''}" draggable="true" data-key="${it.key}" data-id="${p.id}" title="From planner · ${dayLabel(p.date)} · ${esc(p.time)} · ${p.status}">
+      ${thumbHTML(s)}${icon?`<span class="ic">${icon}</span>`:''}<span class="src">planner</span>${planned?`<span class="when">${dayLabel(p.date)}</span>`:''}
+      <button class="rm" data-rmkey="${it.key}" title="Hide from the preview (the post stays in your planner)">×</button></div>`;
   };
-  const olds = oldPosts[feedPlat].length
-    ? oldPosts[feedPlat].map(o => `<div class="tile old">${thumbHTML(o)}</div>`).join('')
-    : Array.from({length:9}, () => '<div class="tile old empty"></div>').join('');
+  const fill = items.length < 9 ? Array.from({length:9-items.length}, () => '<div class="tile old empty"></div>').join('') : '';
   $('#plView').innerHTML = `<div class="feed-wrap">
     <div class="feed-side">
       <div class="seg" style="width:100%">
@@ -933,23 +961,65 @@ function renderFeed(){
         ? 'Posts and reels in the order they’ll go out, newest top-left. Stories don’t appear on the grid. The profile grid crops everything to 3:4, so keep key text away from the top and bottom edges.'
         : 'Videos and photo carousels, newest top-left. TikTok shows a 3:4 cover of each video, so make sure the middle of your first frame reads well.'}</p>
       <div class="legend">
-        <span><i style="outline:2px dashed var(--brand-pink);outline-offset:-2px;background:#333"></i>Planned (date shown)</span>
-        <span><i style="background:#262626"></i>Already on your profile</span>
+        <span><i class="lg-plan"></i>From planner (date shown)</span>
+        <span><i class="lg-added"></i>Added photos</span>
       </div>
-      <p><b style="color:var(--paper)">Drag tiles to swap them.</b> Their posting days and times swap too, so the grid and the calendar stay in sync.</p>
-      <button class="btn" id="plAddOld">⬆ ${oldPosts[feedPlat].length?'Replace':'Add'} your current ${ig?'posts':'videos'}</button>
-      <p style="font-size:11px">Optional: upload images of your latest posts (newest first) so the preview shows your real feed under the new ones. Posts you mark as Posted show up here automatically.</p>
+      <p><b style="color:var(--paper)">Drag any tile to move it.</b> Swapping two planner posts swaps their posting days too, so the calendar stays in sync. × removes a tile from the preview only.</p>
+      <div class="feed-btns">
+        <button class="btn" id="plAddOld">＋ Add photos</button>
+        <button class="btn" id="plFromPlan">📅 From planner</button>
+      </div>
+      <p style="font-size:11px">Add photos of your current ${ig?'posts':'videos'} or ideas to see how they sit together. Planner posts for ${ig?'Instagram':'TikTok'} show up here automatically; use <b>From planner</b> to bring back others.</p>
     </div>
     <div class="phone">
       <div class="ph-top">your profile</div>
       <div class="ph-prof"><div class="ph-av"></div>
-        <div class="ph-stats"><div><b>${list.length + oldPosts[feedPlat].length}</b>${ig?'posts':'videos'}</div><div><b>—</b>followers</div><div><b>—</b>following</div></div></div>
+        <div class="ph-stats"><div><b>${items.length}</b>${ig?'posts':'videos'}</div><div><b>—</b>followers</div><div><b>—</b>following</div></div></div>
       <div class="ph-tabs">${ig?'<div class="on">▦ Posts</div><div>▶ Reels</div><div>☺ Tagged</div>':'<div class="on">▦ Videos</div><div>♡ Liked</div>'}</div>
-      <div class="grid">${list.map(tile).join('')}${olds}</div>
+      <div class="grid">${items.map(tile).join('')}${fill}</div>
     </div>
   </div>`;
   $$('[data-fp]').forEach(b => b.onclick = () => { feedPlat = b.dataset.fp; renderFeed(); });
   $('#plAddOld').onclick = () => { uploadMode='old'; $('#plFileIn').click(); };
+  $('#plFromPlan').onclick = openFromPlanner;
+  $$('[data-rmkey]').forEach(b => b.onclick = e => { e.stopPropagation(); removeFeedTile(b.dataset.rmkey); });
+}
+async function saveFeed(){ if(me) await saveOldPosts(); }
+async function removeFeedTile(key){
+  const L = feedLayout(feedPlat), id = key.slice(2);
+  if(key.startsWith('a:')){
+    if(!(await askConfirm('Remove this photo from the feed preview?', 'Remove'))) return;
+    oldPosts[feedPlat] = oldPosts[feedPlat].filter(o => o.id !== id);
+  } else {
+    L.hidden.push(id); L.extra = L.extra.filter(x => x !== id);
+    toast('Hidden from the preview. It’s still in your planner; use From planner to bring it back.');
+  }
+  L.order = L.order.filter(k => k !== key);
+  await saveFeed(); renderFeed();
+}
+function moveFeedTile(fromKey, toKey){
+  const L = feedLayout(feedPlat), o = L.order, i = o.indexOf(fromKey), j = o.indexOf(toKey);
+  if(i < 0 || j < 0 || i === j) return;
+  [o[i], o[j]] = [o[j], o[i]];
+  if(fromKey.startsWith('p:') && toKey.startsWith('p:')){   // two planner posts: swap their posting slots too
+    const a = mine().find(x => 'p:'+x.id === fromKey), b = mine().find(x => 'p:'+x.id === toKey);
+    if(a && b){ [a.date,b.date] = [b.date,a.date]; [a.time,b.time] = [b.time,a.time]; touch(a); touch(b); toast(`Swapped: now ${dayLabel(a.date)} ↔ ${dayLabel(b.date)}`); }
+  }
+  saveFeed(); render();
+}
+function openFromPlanner(){
+  const inGrid = new Set(feedItems(feedPlat).filter(x => x.kind==='plan').map(x => x.p.id));
+  const rest = mine().filter(p => !inGrid.has(p.id) && p.slides.length).sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+  $('#plPickGrid').innerHTML = rest.length
+    ? rest.map(p => `<button class="pick" data-pick="${p.id}" title="${dayLabel(p.date)} · ${esc(p.time)}">${thumbHTML(p.slides[0])}<span>${dayLabel(p.date)}</span></button>`).join('')
+    : '<p>All your planner posts are already in the grid.</p>';
+  $$('[data-pick]').forEach(b => b.onclick = async () => {
+    const L = feedLayout(feedPlat), id = b.dataset.pick;
+    L.hidden = L.hidden.filter(x => x !== id); if(!L.extra.includes(id)) L.extra.push(id);
+    b.remove(); await saveFeed(); renderFeed();
+    if(!$('#plPickGrid [data-pick]')) $('#plPickGrid').innerHTML = '<p>All your planner posts are already in the grid.</p>';
+  });
+  $('#plPickScrim').classList.add('open');
 }
 
 // ---------- editor drawer ----------
@@ -1162,9 +1232,14 @@ function bindView(){
     if(card){ selId = card.dataset.id; slideIdx = 0; if(view==='month'){ const p = selected(); if(p) cursor = fromIso(p.date); } render(); return; }
     const cell = e.target.closest('.mcell'); if(cell){ cursor = fromIso(cell.dataset.date); setView('week'); }
   });
-  let dragId = null;
-  v.addEventListener('dragstart', e => { const c = e.target.closest('[data-id]'); if(c){ dragId = c.dataset.id; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', dragId); } });
+  let dragId = null, dragKey = null;
+  v.addEventListener('dragstart', e => {
+    const t = e.target.closest('.tile[data-key]');
+    if(t){ dragKey = t.dataset.key; dragId = null; t.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', dragKey); return; }
+    const c = e.target.closest('[data-id]'); if(c){ dragId = c.dataset.id; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', dragId); }
+  });
   v.addEventListener('dragover', e => {
+    if(dragKey){ const t = e.target.closest('.tile[data-key]'); if(t){ e.preventDefault(); $$('.tile.over').forEach(x=>x!==t&&x.classList.remove('over')); if(t.dataset.key!==dragKey) t.classList.add('over'); } return; }
     if(!dragId) return;
     const t = e.target.closest('.tile[data-id]');
     if(t){ e.preventDefault(); $$('.tile.over').forEach(x=>x!==t&&x.classList.remove('over')); t.classList.add('over'); return; }
@@ -1173,6 +1248,7 @@ function bindView(){
   });
   v.addEventListener('dragleave', e => { const d = e.target.closest('.day,.mcell,.tile'); if(d && !d.contains(e.relatedTarget)) d.classList.remove('drop','over'); });
   v.addEventListener('drop', e => {
+    if(dragKey){ const t = e.target.closest('.tile[data-key]'); const k = dragKey; dragKey = null; if(t){ e.preventDefault(); moveFeedTile(k, t.dataset.key); } return; }
     if(!dragId) return;
     const t = e.target.closest('.tile[data-id]');
     if(t){
@@ -1184,7 +1260,7 @@ function bindView(){
     const d = e.target.closest('.day,.mcell');
     if(d){ e.preventDefault(); const p = mine().find(x=>x.id===dragId); dragId=null; if(p && p.date!==d.dataset.date){ p.date = d.dataset.date; touch(p); toast(`Moved to ${dayLabel(p.date)}`); } render(); }
   });
-  v.addEventListener('dragend', () => { dragId=null; $$('.pl .drop, .pl .tile.over').forEach(x=>x.classList.remove('drop','over')); });
+  v.addEventListener('dragend', () => { dragId=null; dragKey=null; $$('.pl .drop, .pl .tile.over, .pl .tile.dragging').forEach(x=>x.classList.remove('drop','over','dragging')); });
 }
 function setView(v){ view = v; $$('#plViewSwitch button').forEach(b=>b.classList.toggle('on', b.dataset.view===v)); render(); }
 
@@ -1213,8 +1289,8 @@ async function onFiles(e){
   const p = selected();
   if(uploadMode==='old'){
     // only small previews are kept for these: they're just for the feed preview
-    oldPosts[feedPlat] = slides.map(s => ({ id:s.id, type:s.type, mime:'image/jpeg', w:s.w, h:s.h, preview:s.preview }));
-    await saveOldPosts(); renderFeed(); toast(`${slides.length} existing post${slides.length>1?'s':''} added to the preview`); return;
+    oldPosts[feedPlat].push(...slides.map(s => ({ id:s.id, type:s.type, mime:'image/jpeg', w:s.w, h:s.h, preview:s.preview })));
+    await saveFeed(); renderFeed(); toast(`${slides.length} photo${slides.length>1?'s':''} added to the preview · drag to place ${slides.length>1?'them':'it'}`); return;
   }
   if(uploadMode==='append' && p){ p.slides.push(...slides); slideIdx = p.slides.length - slides.length; touch(p); toast(`${slides.length} slide${slides.length>1?'s':''} added · now ${p.slides.length}`); }
   else if(uploadMode==='replace' && p){ dropSlide(p, p.slides[slideIdx]); p.slides[slideIdx] = slides[0]; touch(p); toast('Replaced'); }
