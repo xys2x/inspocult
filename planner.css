@@ -376,7 +376,7 @@
 .pl .post-block p.quality-note{ color:var(--gold-dim); background:rgba(245,227,163,.08); border-radius:7px; padding:7px 9px; }
 /* email reminders */
 .pl .acct-rem{ display:flex; flex-direction:column; gap:6px; padding:8px 0; border-top:1px solid var(--panel-line); border-bottom:1px solid var(--panel-line); }
-.pl .acct-rem .check{ font-size:12px; }
+.pl .acct-rem .acct-rem-lbl{ font-size:12px; }
 .pl .acct-rem select{ padding:6px 8px; font-size:12px; }
 .pl .rem-pill{ background:none; border:1px dashed var(--panel-line); border-radius:20px; padding:4px 10px; font-family:var(--mono); font-size:10px; letter-spacing:.04em; color:#8b856f; cursor:pointer; }
 .pl .rem-pill:hover{ border-color:var(--gold); color:var(--gold-dim); }

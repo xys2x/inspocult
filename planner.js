@@ -402,7 +402,7 @@ async function onSignedIn(user){
 }
 
 // ----- email reminders (sent by the post-reminders function on Supabase) -----
-let reminders = { emailReminders:false, leadMin:0 };
+let reminders = { emailReminders:true, leadMin:0 };   // reminders are always on; people only choose when
 function renderRemPill(){
   const b = $('#plRemPill'); if(!b) return;
   b.textContent = reminders.emailReminders ? `✉ reminders on${reminders.leadMin ? ` · ${reminders.leadMin===60 ? '1 h' : reminders.leadMin+' min'} before` : ''}` : '✉ reminders off';
@@ -411,10 +411,12 @@ function renderRemPill(){
 async function loadReminders(){
   if(!me) return;
   const local = await kvGet('settings:'+me.id); if(local) reminders = { ...reminders, ...local };
-  if(sb){ try{ const { data } = await sb.from('planner_kv').select('value').eq('key','settings').maybeSingle(); if(data && data.value) reminders = { ...reminders, ...data.value }; }catch(e){} }
+  let serverOn = false;
+  if(sb){ try{ const { data } = await sb.from('planner_kv').select('value').eq('key','settings').maybeSingle(); if(data && data.value){ reminders = { ...reminders, ...data.value }; serverOn = !!data.value.emailReminders; } }catch(e){} }
+  if(!serverOn){ reminders.emailReminders = false; await saveReminders({ emailReminders:true }, true); }   // switch on for everyone, quietly
   renderRemPill();
 }
-async function saveReminders(change){
+async function saveReminders(change, quiet){
   const turningOn = change.emailReminders === true && !reminders.emailReminders;
   reminders = { ...reminders, ...change };
   await kvSet('settings:'+me.id, reminders);
@@ -427,12 +429,12 @@ async function saveReminders(change){
   try{
     const { error } = await sb.from('planner_kv').upsert({ user_id:me.id, key:'settings', value:reminders, updated_at:new Date().toISOString() }, { onConflict:'user_id,key' });
     if(error) throw error;
-    toast(reminders.emailReminders ? `Reminders on ✓ We'll email ${me.email} ${reminders.leadMin ? (reminders.leadMin===60 ? '1 hour' : reminders.leadMin+' minutes')+' before' : 'when'} each post is due` : 'Email reminders off');
-  } catch(err){ console.error(err); toast('Couldn’t save the reminder setting. Check your connection and try again.', true); }
+    if(!quiet) toast(`✓ We'll email ${me.email} ${reminders.leadMin ? (reminders.leadMin===60 ? '1 hour' : reminders.leadMin+' minutes')+' before' : 'when'} each post is due`);
+  } catch(err){ console.error(err); if(!quiet) toast('Couldn’t save the reminder setting. Check your connection and try again.', true); }
 }
 
 function onSignedOut(){
-  reminders = { emailReminders:false, leadMin:0 };
+  reminders = { emailReminders:true, leadMin:0 };
   me = null; selId = null; oldPosts = { ig:[], tt:[] };
   rememberUser(null); setSync('idle'); renderAccount();
   if(inPlanner() || inInspo()) switchTab('studio');
@@ -634,8 +636,8 @@ function renderAccount(){
       <div class="acct-email">${esc(me.email)}</div>
       <div class="acct-sync" id="plAcctSync"></div>
       <div class="acct-rem">
-        <label class="check"><input type="checkbox" id="plRemOn" ${reminders.emailReminders ? 'checked' : ''}> ✉ Email me when it's time to post</label>
-        <select id="plRemLead" ${reminders.emailReminders ? '' : 'disabled'}>
+        <label class="acct-rem-lbl" for="plRemLead">✉ Email reminder</label>
+        <select id="plRemLead">
           <option value="0" ${reminders.leadMin==0?'selected':''}>at the posting time</option>
           <option value="15" ${reminders.leadMin==15?'selected':''}>15 minutes before</option>
           <option value="60" ${reminders.leadMin==60?'selected':''}>1 hour before</option>
@@ -649,7 +651,6 @@ function renderAccount(){
   $('#plDeleteAcctBtn').onclick = () => { $('#plAcctMenu').hidden = true; openDeleteAccount(); };
   $('#plAcctBtn').onclick = e => { e.stopPropagation(); $('#plAcctMenu').hidden = !$('#plAcctMenu').hidden; };
   $('#plSyncNow').onclick = async () => { $('#plAcctMenu').hidden = true; await pushAll(); await pullAll(true); };
-  $('#plRemOn').onchange = e => saveReminders({ emailReminders: e.target.checked });
   $('#plRemLead').onchange = e => saveReminders({ leadMin: +e.target.value });
   $('#plLogoutBtn').onclick = () => { $('#plAcctMenu').hidden = true; $('#plLogoutWipe').checked = false; $('#plLogoutEmail').textContent = me.email; $('#plLogoutScrim').classList.add('open'); };
 }
@@ -692,7 +693,6 @@ function injectUI(){
       <div class="p-title" id="plTitle"></div>
       <div class="stats" id="plStats"></div>
       <span class="sync-pill" id="plSync"></span>
-      <button class="rem-pill" id="plRemPill" title="Email reminders"></button>
       <div class="spacer"></div>
       <div class="seg" id="plViewSwitch">
         <button data-view="week" class="on">Week</button><button data-view="month">Month</button><button data-view="feed">Feed preview</button>
@@ -1410,7 +1410,6 @@ function bindGlobal(){
   $('#plNext').onclick = () => { cursor = view==='week' ? addDays(cursor,7) : new Date(cursor.getFullYear(), cursor.getMonth()+1, 1); render(); };
   $('#plToday').onclick = () => { cursor = today(); render(); };
   $('#plNewBtn').onclick = () => openNew(null);
-  $('#plRemPill').onclick = e => { e.stopPropagation(); const m = $('#plAcctMenu'); if(m){ m.hidden = false; } };
   $('#plBackupBtn').onclick = openBackup;
   $('#plDoBackup').onclick = doBackup;
   $('#plDoRestore').onclick = () => $('#plRestoreIn').click();

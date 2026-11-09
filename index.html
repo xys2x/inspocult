@@ -210,6 +210,7 @@
 
   /* why it's useful */
   .why{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:28px; }
+  .why div:last-child:nth-child(odd){ grid-column:1 / -1; }
   .why div{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:rgba(255,255,255,.015); }
   .why h3{ margin:0 0 4px; font-family:var(--display); font-weight:600; font-size:16px; color:var(--gold-dim); }
   .why p{ margin:0; font-size:13px; line-height:1.55; color:#b9b39e; }
@@ -293,12 +294,13 @@
           <div class="steps">
             <div class="step"><div class="n">01</div><h3>Create</h3><p>Design in the studio and press <b>Add to planner</b>, or upload photos and videos you already have. Carousels included.</p></div>
             <div class="step"><div class="n">02</div><h3>Schedule</h3><p>Drop posts into a week or month calendar. Write captions and hashtags. Sizes are checked for Instagram, TikTok and YouTube.</p></div>
-            <div class="step"><div class="n">03</div><h3>Post</h3><p>On the day: download the media, copy the caption, copy the hashtags, paste into the app. Mark it posted.</p></div>
+            <div class="step"><div class="n">03</div><h3>Post</h3><p>We email you when it's time to post. Download the media, copy the caption and hashtags, paste into the app. Mark it posted.</p></div>
           </div>
           <div class="pills">
             <span class="pill">🗓 week &amp; month view</span>
             <span class="pill">▦ Instagram &amp; TikTok feed preview</span>
             <span class="pill">▣ carousels</span>
+            <span class="pill">✉ email reminder when it's time to post</span>
             <span class="pill">☁ saved to your free account</span>
           </div>
           <div class="ctas">
@@ -319,7 +321,7 @@
       <div class="inspo-head">
         <div class="eyebrow"><span class="new-tag">NEW</span> INSPO BOARD</div>
         <h2 class="sec-title">Save the idea now.<br><em>Recreate it later.</em></h2>
-        <p class="sub">See a look you love and think "I want to do that"? Save it to your Inspo board so the idea never gets lost in your camera roll or a sea of pins. When you've made it, tick <b>Mark as recreated</b> and add your version: your board shows a butter ✓ on everything you've done, and hovering shows yours.</p>
+        <p class="sub">See a photo you love and think "I want to do that"? Save it to your Inspo board so the idea never gets lost in your camera roll or a sea of pins. When you've made it, tick <b>Mark as recreated</b> and add your version: your board shows a butter ✓ on everything you've done, and hovering shows yours.</p>
       </div>
 
       <div class="inspo-main">
@@ -355,13 +357,11 @@
           <div class="why">
             <div><h3>💡 Turn inspiration into content</h3><p>Save ideas you love and turn your board into a visual to-do list of posts to recreate later. Never run out of inspiration or wonder what to create next!</p></div>
             <div><h3>📈 See yourself level up</h3><p>Every butter ✓ is something you made. Scroll your board and watch your style grow.</p></div>
-            <div><h3>📱 On every device</h3><p>Save an idea on your phone, plan it on your laptop. Your board syncs to your free account.</p></div>
             <div><h3>🔒 Just for you</h3><p>Your inspo board is private. Only you can see what you've saved and recreated.</p></div>
           </div>
 
           <div class="ctas">
             <a class="btn primary" href="template-studio.html#inspo">Start saving ideas, it's free</a>
-            <a class="btn secondary" href="#planner">How the planner works</a>
           </div>
           <p class="fineprint">Uses the same free account as the planner.</p>
         </div>
