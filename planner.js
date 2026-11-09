@@ -265,8 +265,9 @@ const remoteData = p => ({ kind:p.kind||'post', note:p.note||'', date:p.date, ti
 
 async function uploadPreview(s, prefix=''){
   if(!s || s.previewPath || !s.preview) return;
-  const path = `${me.id}/${prefix}${s.id}.jpg`;
-  const { error } = await sb.storage.from(PREVIEW_BUCKET).upload(path, s.preview, { upsert:true, contentType:'image/jpeg' });
+  const png = s.preview.type === 'image/png';
+  const path = `${me.id}/${prefix}${s.id}.${png ? 'png' : 'jpg'}`;
+  const { error } = await sb.storage.from(PREVIEW_BUCKET).upload(path, s.preview, { upsert:true, contentType: png ? 'image/png' : 'image/jpeg' });
   if(error) throw error;
   s.previewPath = path;
 }
@@ -355,7 +356,7 @@ async function fetchMissingPreviews(){
     for(let i=0; i<need.length; i+=4){
       await Promise.all(need.slice(i,i+4).map(async ([p,s]) => {
         const { data, error } = await sb.storage.from(PREVIEW_BUCKET).download(s.previewPath);
-        if(!error && data){ s.preview = data; await putLocal(p); }
+        if(!error && data){ s.preview = s.mime==='image/png' && data.type!=='image/png' ? new Blob([data], { type:'image/png' }) : data; await putLocal(p); }
       }));
       renderView(); if(selId) renderDrawer(); renderInspo();
     }
@@ -430,6 +431,7 @@ async function onSignedIn(user){
   }
   renderAccount();
   render();
+  notifyStickers();
   ensurePreviews();
   pullAll(true);
 }
@@ -471,7 +473,7 @@ function onSignedOut(){
   me = null; selId = null; oldPosts = { ig:[], tt:[] };
   rememberUser(null); setSync('idle'); renderAccount();
   if(inPlanner() || inInspo()) switchTab('studio');
-  updateDueBadge();
+  updateDueBadge(); notifyStickers();
 }
 
 async function logOut(){
@@ -1576,7 +1578,33 @@ let inspoFilter = 'all';
 let mineFor = null;     // which item "+ add my version" is uploading for
 const HOVER = window.matchMedia && matchMedia('(hover: hover)').matches;   // laptop mouse vs. phone touch
 
+// ===================== STICKERS (cutouts saved from the studio) =====================
+// Stored like inspo ideas: a post record with kind 'sticker' and one transparent PNG preview.
+const stickers = () => owned().filter(p => p.kind==='sticker' && p.slides[0]).sort((a,b) => (b.created||0) - (a.created||0));
+function notifyStickers(){ try{ window.dispatchEvent(new Event('pl-stickers')); }catch(e){} }
+window.plStickers = {
+  signedIn: () => !!me,
+  requireLogin: then => requireLogin(then),
+  list: () => stickers().map(p => ({ id:p.id, w:p.slides[0].w, h:p.slides[0].h, blob:p.slides[0].preview || null, url: prevURL(p.slides[0]) })),
+  async add(blob, w, h){
+    if(!me) throw new Error('not signed in');
+    const it = { id:uid(), owner:me.id, kind:'sticker', note:'', status:'todo', date:iso(today()), time:'00:00', formats:[], caption:'', tags:'', title:'',
+      slides:[{ id:uid(), type:'image', mime:'image/png', w, h, preview:blob }], thumb:null, created:Date.now(), updatedAt:Date.now(), dirty:true, synced:false, orphans:[] };
+    store.push(it); touch(it); notifyStickers();
+    return it.id;
+  },
+  async remove(id){
+    const p = stickers().find(x => x.id===id); if(!p) return false;
+    if(!(await askConfirm('Delete this sticker? It will be removed from your account.', 'Delete', true))) return false;
+    p.slides.forEach(forgetURLs); p.deleted = true;
+    if(p.synced) touch(p); else { store = store.filter(i => i!==p); delLocal(p.id); }
+    notifyStickers(); return true;
+  },
+  toast: (m, bad) => toast(m, bad),
+};
+
 function renderInspo(){
+  notifyStickers();
   if(!inInspo() || !me) return;
   renderMemo();
   const all = inspos().sort((a,b) => (b.created||0) - (a.created||0));
@@ -1738,6 +1766,7 @@ async function boot(){
   renderAccount();
   renderRemPill();
   render();
+  notifyStickers();
   // links like template-studio.html#planner (from the home page) open straight on the Planner
   if(location.hash === '#planner') switchTab('planner');
   if(location.hash === '#inspo') switchTab('inspo');

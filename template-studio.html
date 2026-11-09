@@ -16,7 +16,7 @@
 <!-- AdSense publisher ID: ca-pub-4805663093054929 (real). The data-ad-slot
      values further down are still placeholders until AdSense gives real slot IDs. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4805663093054929" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="planner.css?v=2026-11-09d">
+<link rel="stylesheet" href="planner.css?v=2026-11-09e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Pacifico&family=Playfair+Display:wght@400;600;700&family=Bebas+Neue&family=Caveat:wght@500;700&family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&family=Anton&family=Abril+Fatface&family=Lobster&family=Dancing+Script:wght@500;700&family=Fredoka:wght@400;500;600;700&family=Archivo+Black&family=Courier+Prime:wght@400;700&family=Yellowtail&family=Josefin+Sans:wght@400;500;600;700&family=Great+Vibes&family=Italianno&family=Chewy&family=Patrick+Hand&family=Press+Start+2P&family=VT323&family=Kalam:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
@@ -282,6 +282,18 @@
   /* Selection handles are easier to grab on a small touch screen when a bit bigger —
      handled in JS (HANDLE_R) rather than here, since they're drawn on canvas. */
 }
+  /* My stickers (cutouts saved to the account) */
+  .sticker-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px; }
+  .sticker-grid:empty{ display:none; }
+  .sticker-grid .stk{ position:relative; aspect-ratio:1; border-radius:8px; border:1px solid var(--panel-line); cursor:pointer; overflow:hidden;
+    background-color:#2a261d; background-image:linear-gradient(45deg,#332e23 25%,transparent 25%),linear-gradient(-45deg,#332e23 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#332e23 75%),linear-gradient(-45deg,transparent 75%,#332e23 75%);
+    background-size:12px 12px; background-position:0 0,0 6px,6px -6px,-6px 0; }
+  .sticker-grid .stk:hover{ border-color:var(--gold); }
+  .sticker-grid .stk img{ position:absolute; inset:6%; width:88%; height:88%; object-fit:contain; }
+  .sticker-grid .stk .x{ position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%; border:0; background:rgba(0,0,0,.75); color:#fff; font-size:12px; line-height:18px; padding:0; cursor:pointer; opacity:0; transition:opacity .15s; }
+  .sticker-grid .stk:hover .x{ opacity:1; }
+  .sticker-note{ margin:8px 0 0; font-size:11.5px; line-height:1.5; color:#8b856f; }
+  .sticker-note:empty{ display:none; }
 </style>
 </head>
 <body>
@@ -383,6 +395,13 @@
           <button class="btn small" id="addEmoji">+ Icon</button>
         </div>
         <input type="file" id="fileInputImgNew" accept="image/*">
+      </div>
+
+      <div class="rsection">
+        <h4>My stickers</h4>
+        <button class="btn small" id="makeSticker" style="width:100%;justify-content:center;">✂ Make a cutout sticker</button>
+        <div id="stickerGrid" class="sticker-grid"></div>
+        <p id="stickerNote" class="sticker-note"></p>
       </div>
 
       <div class="rsection">
@@ -2620,6 +2639,11 @@ function drawElementTo(tctx, tW, tH, el){
       tctx.fillStyle = el.fill; tctx.fill();
     }
     if(el.stroke){ tctx.strokeStyle=el.stroke; tctx.lineWidth=el.strokeWidth||1; roundRectPath(tctx,x,y,w,h,(el.r||0)*tH); tctx.stroke(); }
+  } else if(el.type==='image' && el.sticker){
+    if(el.el){
+      const iw = el.el.naturalWidth || el.el.width, ih = el.el.naturalHeight || el.el.height, k = Math.min(w/iw, h/ih);
+      tctx.drawImage(el.el, x + (w - iw*k)/2, y + (h - ih*k)/2, iw*k, ih*k);
+    }
   } else if(el.type==='image'){
     const shape = el.shape || 'rect';
     if(shape==='polaroid'){
@@ -2963,7 +2987,7 @@ function handleCanvasDblClick(e){
   const hit = hitElement(pos);
   if(hit){
     if(hit.type==='text'||hit.type==='emoji'){ openInlineEditor(hit); }
-    else if(hit.type==='image'){ selectedId=hit.id; document.getElementById('fileInputImg').click(); }
+    else if(hit.type==='image' && !hit.sticker){ selectedId=hit.id; document.getElementById('fileInputImg').click(); }
     else if(hit.type==='rect' && hit.fillType==='image'){ selectedId=hit.id; document.getElementById('fileInputRectFill').click(); }
     renderLayerList(); renderProps();
     return;
@@ -3112,7 +3136,9 @@ function renderProps(){
     }
     html += `<div class="row" style="margin-top:8px;"><div><label class="field">Corner radius</label><input type="range" id="p_r" min="0" max="0.1" step="0.002" value="${el.r||0}"></div></div>`;
   }
-  if(el.type==='image'){
+  if(el.type==='image' && el.sticker){
+    html += `<p style="margin:0 0 8px;font-size:12px;color:#8b856f;">Sticker · drag a corner to resize.</p>`;
+  } else if(el.type==='image'){
     html += `<button class="btn" id="p_replace" style="width:100%;justify-content:center;margin-bottom:8px;">⤒ Replace photo</button>`;
     if(el.el){
       const inRepo = repositionId===el.id;
@@ -3232,6 +3258,58 @@ document.getElementById('addEmoji').onclick = ()=>{
   const el = mk('emoji',{x:.2,y:.3,w:.4,h:.06,emoji:'✨ ✨ ✨',fontSize:.03,align:'left',z:Math.max(0,...elements.map(e=>e.z))+1});
   elements.push(el); selectedId=el.id; draw(); renderLayerList(); renderProps();
 };
+
+// =========================== MY STICKERS ==================================
+// Cutouts made with cutout.js, kept in the person's account through planner.js (window.plStickers).
+function addStickerToCanvas(blob){
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = ()=>{
+    const CW = canvas.width, CH = canvas.height, iw = img.naturalWidth, ih = img.naturalHeight;
+    let w = .42, h = (w*CW) * (ih/iw) / CH;
+    if(h > .55){ h = .55; w = (h*CH) * (iw/ih) / CW; }
+    const el = mk('image', { sticker:true, label:'sticker', shape:'rect', r:0, src:url, el:img, focalX:.5, focalY:.5, zoom:1,
+      x:(1-w)/2, y:(1-h)/2, w, h, z:Math.max(0,...elements.map(e=>e.z))+1 });
+    elements.push(el); selectedId = el.id; draw(); renderLayerList(); renderProps(); refreshAllThumbnails();
+  };
+  img.src = url;
+}
+function saveSticker(blob, w, h){
+  const api = window.plStickers;
+  addStickerToCanvas(blob);
+  if(!api) return;
+  const save = async ()=>{ try{ await api.add(blob, w, h); api.toast('Sticker saved to your account ✓'); } catch(e){ console.error(e); api.toast('Couldn’t save the sticker. Try again.', true); } };
+  if(api.signedIn()) save();
+  else { api.toast('Log in to keep this sticker in your account'); api.requireLogin(save); }
+}
+function makeStickerFrom(image){
+  if(!window.openCutout){ setStatus('The cutout tool is still loading. Try again in a moment.'); return; }
+  window.openCutout({ image: image || null, onSave: saveSticker });
+}
+function renderStickers(){
+  const grid = document.getElementById('stickerGrid'), note = document.getElementById('stickerNote'), api = window.plStickers;
+  if(!grid) return;
+  if(!api || !api.signedIn()){
+    grid.innerHTML = '';
+    note.textContent = 'Cut anything out of your photos (people, flowers, food) and reuse it on any template. Log in to keep your stickers.';
+    return;
+  }
+  const list = api.list();
+  note.textContent = list.length ? '' : 'Cut anything out of your photos (people, flowers, food) and reuse it on any template. Your stickers are saved to your account.';
+  grid.innerHTML = list.map(st => `<div class="stk" data-stk="${st.id}" title="Add to canvas">${st.url ? `<img src="${st.url}" alt="">` : ''}<button class="x" data-stkdel="${st.id}" title="Delete sticker">×</button></div>`).join('');
+}
+document.getElementById('makeSticker').onclick = ()=> makeStickerFrom(null);
+document.getElementById('stickerGrid').addEventListener('click', async e => {
+  const api = window.plStickers; if(!api) return;
+  const del = e.target.closest('[data-stkdel]');
+  if(del){ e.stopPropagation(); await api.remove(del.dataset.stkdel); return; }
+  const t = e.target.closest('[data-stk]'); if(!t) return;
+  const st = api.list().find(x => x.id===t.dataset.stk);
+  if(st && st.blob) addStickerToCanvas(st.blob);
+  else setStatus('This sticker is still loading from your account. Try again in a moment.');
+});
+window.addEventListener('pl-stickers', renderStickers);
+setTimeout(renderStickers, 0);
 
 // =========================== UPLOADS ======================================
 document.getElementById('btnUploadBg').onclick = ()=>{
@@ -3397,6 +3475,7 @@ function showCtxMenu(e){
   const items = [
     ['copy', 'Copy', K+'C', !el], ['paste', 'Paste', K+'V', !clipboardEl], ['duplicate', 'Duplicate', K+'D', !el], ['delete', 'Delete', '⌫', !el],
     'sep', ['front', 'Bring to front', '', !el], ['back', 'Send to back', '', !el],
+    ...(el && el.type==='image' && !el.sticker && el.el instanceof HTMLImageElement ? ['sep', ['cutout', '✂ Make a sticker from this photo', '', false]] : []),
     'sep', ['undo', 'Undo', K+'Z', h.idx <= 0], ['redo', 'Redo', mac ? '⇧⌘Z' : 'Ctrl+Y', h.idx >= h.stack.length - 1],
   ];
   ctxMenu.innerHTML = items.map(it => it==='sep' ? '<div class="ctx-sep"></div>'
@@ -3409,7 +3488,7 @@ function showCtxMenu(e){
     const b = ev.target.closest('button[data-act]'); if(!b || b.disabled) return;
     const cur = elements.find(x=>x.id===selectedId);
     ({ copy:()=>{ clipboardEl = cloneElementData(cur); setStatus('Element copied.'); }, paste:pasteElement, duplicate:()=>duplicateElement(cur),
-       delete:deleteSelected, front:()=>toFront(cur), back:()=>toBack(cur), undo, redo })[b.dataset.act]();
+       delete:deleteSelected, front:()=>toFront(cur), back:()=>toBack(cur), undo, redo, cutout:()=>makeStickerFrom(cur && cur.el) })[b.dataset.act]();
     hideCtxMenu();
   };
 }
@@ -3714,6 +3793,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="planner.js?v=2026-11-09d"></script>
+<script src="planner.js?v=2026-11-09e"></script>
+<script src="cutout.js?v=2026-11-09e"></script>
 </body>
 </html>
