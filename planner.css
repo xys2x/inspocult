@@ -383,9 +383,10 @@
 .pl .sticky textarea::placeholder{ color:rgba(91,69,36,.45); }
 .pl .sticky-foot{ margin-top:8px; font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:rgba(91,69,36,.6); }
 @media (max-width:980px){
-  .pl .ins-body{ grid-template-columns:1fr; grid-template-rows:auto minmax(0,1fr); }
-  .pl .ins-body > .view{ order:1; }
-  .pl .ins-side{ order:-1; padding:18px 18px 4px; overflow:visible; }
+  /* phones/tablets: the note sits above the board and both scroll together (no overlap) */
+  .pl .ins-body{ display:flex; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .pl .ins-body > .view{ order:1; flex:none; overflow:visible; min-height:auto; }
+  .pl .ins-side{ order:-1; flex:none; min-height:auto; padding:18px 18px 10px; overflow:visible; }
   .pl .sticky{ position:relative; min-height:0; transform:rotate(-.6deg); }
   .pl .sticky{ padding:16px 14px 10px; }
   .pl .sticky-head{ font-size:22px; margin-bottom:6px; }
