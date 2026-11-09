@@ -94,7 +94,30 @@ const req = (store, mode, fn) => new Promise((res, rej) => {
   const t = db.transaction(store, mode); const r = fn(t.objectStore(store));
   t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
 });
-const storageFail = err => { console.error(err); toast(err && err.name==='QuotaExceededError' ? 'This browser’s storage is full. Delete old posts or big videos and try again.' : 'Could not save on this computer.', true); };
+let lastStorageToast = 0;
+const storageFail = err => {
+  console.error(err);
+  if(Date.now() - lastStorageToast < 8000) return;   // don't repeat the same warning over and over
+  lastStorageToast = Date.now();
+  toast(err && err.name==='QuotaExceededError' ? 'This browser’s storage is full. Delete old posts or big videos and try again.' : `Could not save on this computer${err && err.name ? ` (${err.name})` : ''}. Your account copy is safe.`, true);
+};
+// Safari sometimes loses the file behind a photo it stored. A post holding such a photo then can't be
+// saved again ("Could not save on this computer") and shows a broken image. On start-up, check every photo:
+// unreadable copies are dropped (previews come back from the account), previews are kept as in-memory copies.
+async function readable(b){ try{ if(!b || !b.size) return false; await b.slice(0, 1).arrayBuffer(); return true; }catch(e){ return false; } }
+async function repairStore(){
+  let fixed = 0;
+  for(const p of store){
+    let bad = false;
+    for(const s of [...(p.slides || []), p.thumb]){
+      if(!s) continue;
+      if(s.preview){ const m = await memBlob(s.preview); if(m) s.preview = m; else { delete s.preview; bad = true; } }
+      if(s.blob && !(await readable(s.blob))){ delete s.blob; bad = true; }
+    }
+    if(bad){ fixed++; await putLocal(p); }
+  }
+  if(fixed) console.warn(`repaired ${fixed} post(s) with unreadable photos`);
+}
 const putLocal = p => db ? req('posts','readwrite', s => s.put(p)).catch(storageFail) : Promise.resolve();
 const delLocal = id => db ? req('posts','readwrite', s => s.delete(id)).catch(storageFail) : Promise.resolve();
 const kvSet = (k, v) => db ? req('kv','readwrite', s => s.put(v, k)).catch(storageFail) : Promise.resolve();
@@ -1020,7 +1043,7 @@ function openFromPlanner(){
   const inGrid = new Set(feedItems(feedPlat).filter(x => x.kind==='plan').map(x => x.p.id));
   const rest = mine().filter(p => !inGrid.has(p.id) && p.slides.length).sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
   $('#plPickGrid').innerHTML = rest.length
-    ? rest.map(p => `<button class="pick" data-pick="${p.id}" title="${dayLabel(p.date)} · ${esc(p.time)}">${thumbHTML(p.slides[0])}<span>${dayLabel(p.date)}</span></button>`).join('')
+    ? rest.map(p => `<button class="fp-pick" data-pick="${p.id}" title="${dayLabel(p.date)} · ${esc(p.time)}">${thumbHTML(p.slides[0])}<span>${dayLabel(p.date)}</span></button>`).join('')
     : '<p>All your planner posts are already in the grid.</p>';
   $$('[data-pick]').forEach(b => b.onclick = async () => {
     const L = feedLayout(feedPlat), id = b.dataset.pick;
@@ -1686,6 +1709,7 @@ async function boot(){
   try{
     db = await openDB();
     store = ((await req('posts','readonly', s => s.getAll())) || []).map(p => ({ orphans:[], ...p, owner: p.owner || null }));
+    await repairStore();
     if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
   } catch(err){
     console.error(err);
