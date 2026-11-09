@@ -111,6 +111,12 @@ const blobURL = (key, blob) => { if(!blob) return ''; if(!urls.has(key)) urls.se
 const fullURL = s => s && s.blob ? blobURL(s.id+':f', s.blob) : '';
 const prevURL = s => s && s.preview ? blobURL(s.id+':p', s.preview) : '';
 function forgetURLs(s){ if(!s) return; ['f','p'].forEach(k => { const key = `${s.id}:${k}`; if(urls.has(key)){ URL.revokeObjectURL(urls.get(key)); urls.delete(key); } }); }
+// Safari can invalidate Blobs read from IndexedDB once that record is written again (which left broken
+// images in the feed preview after dragging). Keep in-memory copies; unreadable ones are fetched from the cloud.
+async function memBlob(b){ try{ if(!b) return null; const buf = await b.arrayBuffer(); return buf.byteLength ? new Blob([buf], { type:b.type || 'image/jpeg' }) : null; }catch(e){ return null; } }
+async function hydrateOldPosts(){
+  for(const k of ['ig','tt']) for(const s of (oldPosts[k]||[])){ const b = await memBlob(s.preview); forgetURLs(s); s.preview = b; }
+}
 // When a slide leaves a post, its cloud preview must be deleted on the next sync
 function dropSlide(p, s){ if(!s) return; forgetURLs(s); if(s.previewPath){ (p.orphans = p.orphans || []).push(s.previewPath); } }
 
@@ -307,7 +313,7 @@ async function pullAll(force=false){
       store = store.filter(x => x!==p); await delLocal(p.id); changed = true;
       if(selId===p.id) selId = null;
     }
-    await pullOldPosts();
+    if(await pullOldPosts() && view==='feed') changed = true;
     await loadReminders();
     setSync(store.some(p=>p.owner===me.id && p.dirty) ? 'syncing' : 'synced');
     if(changed){ render(); renderInspo(); }
@@ -353,12 +359,14 @@ async function pullOldPosts(){
   const next = { ig:[], tt:[] };
   for(const k of ['ig','tt']) for(const m of (data.value[k]||[])){
     const have = byId.get(m.id);
-    let preview = have && have.preview;
+    let preview = have ? await memBlob(have.preview) : null;
+    if(have) forgetURLs(have);
     if(!preview && m.previewPath){ const r = await sb.storage.from(PREVIEW_BUCKET).download(m.previewPath); if(!r.error) preview = r.data; }
     next[k].push({ ...m, preview });
   }
   next.layout = data.value.layout || oldPosts.layout || {};
   oldPosts = next; await kvSet('oldPosts:'+me.id, oldPosts);
+  return true;
 }
 
 // Make previews for posts saved before previews existed (or uploaded while offline)
@@ -389,6 +397,7 @@ async function onSignedIn(user){
     unowned.forEach(p => { p.owner = me.id; p.dirty = true; p.updatedAt = p.updatedAt || Date.now(); putLocal(p); });
     const legacyOld = await kvGet('oldPosts');
     oldPosts = (await kvGet('oldPosts:'+me.id)) || { ig:[], tt:[] };
+    await hydrateOldPosts();
     if(legacyOld && (legacyOld.ig||[]).length + (legacyOld.tt||[]).length && !oldPosts.ig.length && !oldPosts.tt.length){
       oldPosts = legacyOld; await kvSet('oldPosts', undefined); oldPostsDirty = true;
       for(const k of ['ig','tt']) for(const s of oldPosts[k]) if(s.blob && !s.preview){ s.preview = (await analyse(s.blob, s.type)).preview; delete s.blob; }
@@ -1700,7 +1709,7 @@ async function boot(){
   } else {
     // login library unavailable (offline): let the last user keep working locally
     const u = cachedUser();
-    if(u){ me = u; oldPosts = (await kvGet('oldPosts:'+me.id)) || { ig:[], tt:[] }; setSync('offline', 'You’re offline. Changes are saved on this computer and will sync when you’re back online.'); }
+    if(u){ me = u; oldPosts = (await kvGet('oldPosts:'+me.id)) || { ig:[], tt:[] }; await hydrateOldPosts(); setSync('offline', 'You’re offline. Changes are saved on this computer and will sync when you’re back online.'); }
   }
   renderAccount();
   renderRemPill();
