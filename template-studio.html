@@ -393,6 +393,7 @@
           <button class="btn small" id="addText">+ Text</button>
           <button class="btn small" id="addPhoto">+ Photo/Vid slot</button>
           <button class="btn small" id="addEmoji">+ Icon</button>
+          <button class="btn small" id="addStar">+ ★ Moving star</button>
         </div>
         <input type="file" id="fileInputImgNew" accept="image/*">
       </div>
@@ -631,6 +632,18 @@ function buildTemplates(){
   // so "Upload photo / video" (which fills the background) isn't hidden behind it.
   { key:'blank', name:'White Canvas', desc:'A plain white page. Add your own photos, text and icons.', bgColor:'#ffffff',
     build(){ return []; }},
+
+  // ---------- Moving stars (stop-motion) ----------
+  // A full photo with white stars that hop around (motion:'jitter'). Export as GIF / MP4 to keep the movement.
+  { key:'movingstars', name:'Moving Stars', isNew:true, desc:'Your photo with white stars that jump around. Export as GIF or MP4 to keep the movement.',
+    build(){
+      const star = (x,y,s,rot) => mk('text',{x,y,w:s*1.15,h:s*1.15,text:'★',fontFamily:'Inter, sans-serif',fontSize:s,color:'#ffffff',align:'center',rotation:rot,motion:'jitter',label:'moving star',z:3});
+      return [
+        mk('image',{x:0,y:0,w:1,h:1,z:1,label:'background photo'}),
+        star(.08,.04,.10,-12), star(.44,.06,.06,10), star(.70,.20,.085,8), star(.12,.42,.05,14),
+        star(.78,.55,.07,-8), star(.30,.70,.06,6), star(.06,.82,.08,-6), star(.72,.84,.055,12),
+      ];
+    }},
 
   // ---------- iOS / App / Window UI mockups ----------
   { key:'gallery', name:'Gallery Window', desc:'App window with numbered thumbnail rail + main photo + caption bar.',
@@ -2394,7 +2407,7 @@ function renderTplList(){
     card.innerHTML = `<div class="tpl-frame-num">FRAME ${String(i+1).padStart(2,'0')}${edited ? '<span class="tpl-edited" title="You\u2019ve edited this one">● edited</span>' : ''}</div>
       <button class="tpl-fav ${fav?'on':''}" title="${fav ? 'Remove from favourites' : 'Add to favourites'}" aria-pressed="${fav}">${fav ? '♥' : '♡'}</button>
       <div class="tpl-thumb" id="thumb-${t.key}"></div>
-      <div class="tpl-name">${t.name}</div>
+      <div class="tpl-name">${t.name}${t.isNew ? ' <span style="font-family:IBM Plex Mono,monospace;font-size:9.5px;letter-spacing:.1em;background:#FFD1DC;color:#5c2035;padding:2px 6px;border-radius:4px;vertical-align:2px;">NEW · MOVES</span>' : ''}</div>
       <div class="tpl-desc">${t.desc}</div>`;
     card.onclick = (e)=>{ if(e.target.closest('.tpl-fav')){ e.stopPropagation(); toggleFav(t.key); return; } loadTemplate(t.key); };
     wrap.appendChild(card);
@@ -2540,6 +2553,48 @@ function shapeClipPath(c, shape, x, y, w, h, rPx){
   }
 }
 
+// =========================== MOTION =======================================
+// Elements with motion:'jitter' hop to a new random spot / tilt / size a few times a
+// second, like stop-motion. The pattern repeats every MOTION.cycle seconds so GIF and
+// MP4 exports loop seamlessly. While exporting, motionT is set to the frame's time.
+const MOTION = { fps:10/3, cycle:2.4 };
+const MOTION_TYPES = [
+  ['',       'None (still)'],
+  ['jitter', 'Stop-motion jump'],
+  ['wiggle', 'Wiggle (rock side to side)'],
+  ['float',  'Float (up and down)'],
+  ['pulse',  'Pulse (grow and shrink)'],
+  ['spin',   'Spin'],
+  ['blink',  'Blink (fade in and out)'],
+  ['slide',  'Slide in from the side'],
+];
+let motionT = null;                       // null = live clock
+const hasMotion = () => elements.some(e => e.motion);
+function motionStep(){
+  const t = motionT!==null ? motionT : performance.now()/1000;
+  const n = Math.round(MOTION.cycle*MOTION.fps);
+  return ((Math.floor(t*MOTION.fps + 1e-6) % n) + n) % n;
+}
+function motionRand(id, step, k){
+  let h = 2166136261; const str = id + ':' + step + ':' + k;
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) % 10000) / 10000;     // 0..1
+}
+let motionRunning = false, motionLast = -1;
+function motionLoop(){
+  if(motionRunning || !hasMotion()) return;
+  motionRunning = true;
+  (function tick(){
+    if(!hasMotion()){ motionRunning = false; return; }
+    if(motionT===null && !anyVideoAnywhere()){
+      // smooth motions redraw every frame; stop-motion only when it jumps
+      if(elements.some(e => e.motion && e.motion!=='jitter')) draw();
+      else { const s = motionStep(); if(s!==motionLast){ motionLast = s; draw(); } }
+    }
+    requestAnimationFrame(tick);
+  })();
+}
+
 // =========================== RENDER ======================================
 // All render helpers are parameterized by target context + target width/height
 // so the exact same scene can be drawn onto the main canvas and, in parallel,
@@ -2615,6 +2670,7 @@ function draw(panT){
   }
   refreshActiveThumbnail();
   scheduleCommit();
+  if(!motionRunning && hasMotion()) motionLoop();
 }
 
 function drawElementTo(tctx, tW, tH, el){
@@ -2625,6 +2681,33 @@ function drawElementTo(tctx, tW, tH, el){
   if(rot){
     const cx=x+w/2, cy=y+h/2;
     tctx.translate(cx,cy); tctx.rotate(rot); tctx.translate(-cx,-cy);
+  }
+  if(el.motion){
+    const cx=x+w/2, cy=y+h/2;
+    if(el.motion==='jitter'){
+      const st = motionStep(), r = k => motionRand(el.id, st, k)*2-1;
+      tctx.translate(cx + r(1)*tW*.014, cy + r(2)*tH*.012);
+      tctx.rotate(r(3)*20*Math.PI/180);
+      const sc = 1 + r(4)*.12; tctx.scale(sc, sc);
+      tctx.translate(-cx,-cy);
+    } else {
+      // smooth motions: one (or two) full swings per cycle so exports loop seamlessly
+      const t = motionT!==null ? motionT : performance.now()/1000;
+      const ph = ((t % MOTION.cycle) + MOTION.cycle) % MOTION.cycle / MOTION.cycle;   // 0..1
+      const S = Math.sin(ph*2*Math.PI);
+      tctx.translate(cx, cy);
+      if(el.motion==='wiggle') tctx.rotate(Math.sin(ph*4*Math.PI)*8*Math.PI/180);
+      else if(el.motion==='float') tctx.translate(0, S*tH*.015);
+      else if(el.motion==='pulse'){ const k = 1 + Math.sin(ph*4*Math.PI)*.07; tctx.scale(k,k); }
+      else if(el.motion==='spin') tctx.rotate(ph*2*Math.PI);
+      else if(el.motion==='blink') tctx.globalAlpha *= .2 + .8*(.5 + .5*Math.cos(ph*2*Math.PI));
+      else if(el.motion==='slide'){
+        // slides in, holds, slides back out
+        const e = ph < .25 ? 1 - Math.pow(1 - ph/.25, 3) : ph < .8 ? 1 : 1 - Math.pow((ph-.8)/.2, 2);
+        tctx.translate(-(1-e)*tW*.6, 0); tctx.globalAlpha *= Math.max(0, e);
+      }
+      tctx.translate(-cx, -cy);
+    }
   }
   if(el.type==='rect'){
     roundRectPath(tctx,x,y,w,h,(el.r||0)*tH);
@@ -3163,6 +3246,9 @@ function renderProps(){
       html += `<div class="row" style="margin-top:8px;"><div><label class="field">Corner radius</label><input type="range" id="p_r" min="0" max="0.1" step="0.002" value="${el.r||0}"></div></div>`;
     }
   }
+  html += `<label class="field" style="margin-top:8px;">Motion</label><select id="p_motion" style="width:100%;background:#0e0d0a;color:#fff;border:1px solid var(--panel-line);border-radius:5px;padding:7px;">
+      ${MOTION_TYPES.map(([v,l]) => `<option value="${v}" ${(el.motion||'')===v?'selected':''}>${l}</option>`).join('')}</select>
+    <p style="margin:6px 0 0;font-size:11.5px;color:#8b856f;">Moving elements show in GIF and MP4 exports.</p>`;
   html += `<div class="row" style="margin-top:8px;"><div><label class="field">Opacity</label><input type="range" id="p_op" min="0.1" max="1" step="0.02" value="${el.opacity!==undefined?el.opacity:1}"></div></div>`;
   html += `<div class="row" style="margin-top:8px;"><div><label class="field">Rotation <span style="opacity:.6">(or drag the knob above the selection)</span></label><input type="range" id="p_rotation" min="-180" max="180" step="1" value="${el.rotation||0}"></div></div>`;
   html += `<div class="row" style="margin-top:10px;"><button class="btn small" id="p_front">Bring to front</button><button class="btn small" id="p_back">Send to back</button></div>`;
@@ -3194,6 +3280,7 @@ function renderProps(){
     draw(); renderProps();
   });
   bind('p_op','input', e=>{ el.opacity=parseFloat(e.target.value); draw(); });
+  bind('p_motion','change', e=>{ if(e.target.value) el.motion=e.target.value; else delete el.motion; draw(); });
   bind('p_rotation','input', e=>{ el.rotation=parseFloat(e.target.value); draw(); });
   bind('p_front','click', ()=>{ el.z = Math.max(...elements.map(x=>x.z))+1; draw(); renderLayerList(); });
   bind('p_back','click', ()=>{ el.z = Math.min(...elements.map(x=>x.z))-1; draw(); renderLayerList(); });
@@ -3257,6 +3344,12 @@ document.getElementById('addPhoto').onclick = ()=>{
 document.getElementById('addEmoji').onclick = ()=>{
   const el = mk('emoji',{x:.2,y:.3,w:.4,h:.06,emoji:'✨ ✨ ✨',fontSize:.03,align:'left',z:Math.max(0,...elements.map(e=>e.z))+1});
   elements.push(el); selectedId=el.id; draw(); renderLayerList(); renderProps();
+};
+
+document.getElementById('addStar').onclick = ()=>{
+  const el = mk('text',{x:.42,y:.42,w:.12,h:.12,text:'★',fontFamily:'Inter, sans-serif',fontSize:.08,color:'#ffffff',align:'center',motion:'jitter',label:'moving star',z:Math.max(0,...elements.map(e=>e.z))+1});
+  elements.push(el); selectedId=el.id; draw(); renderLayerList(); renderProps();
+  setStatus('Moving star added. Export as GIF or MP4 to keep the movement.');
 };
 
 // =========================== MY STICKERS ==================================
@@ -3626,6 +3719,7 @@ document.getElementById('expGif').onclick = ()=>{
       const wasPlaying = vids.map(v=>!v.paused);
       vids.forEach(v=>v.pause());
       for(let i=0;i<frameCount;i++){
+        motionT = i/fps;
         await Promise.all(vids.map(v=> new Promise(res=>{
           const t = ((i/frameCount)*dur) % (v.duration||dur);
           const h=()=>{ v.removeEventListener('seeked',h); res(); };
@@ -3638,6 +3732,15 @@ document.getElementById('expGif').onclick = ()=>{
       }
       vids.forEach((v,i)=>{ if(wasPlaying[i]) v.play(); });
       videoLoop();
+    } else if(hasMotion()){
+      // one full motion cycle, photo kept still, so the GIF loops without a jump
+      const frameCount = Math.round(MOTION.cycle*fps);
+      for(let i=0;i<frameCount;i++){
+        motionT = i/fps;
+        draw();
+        gif.addFrame(ctx, { copy:true, delay: 1000/fps });
+        setProgress(5 + (i/frameCount)*45);
+      }
     } else {
       const dur = 2.4; const frameCount = Math.round(dur*fps);
       for(let i=0;i<frameCount;i++){
@@ -3647,6 +3750,7 @@ document.getElementById('expGif').onclick = ()=>{
         setProgress(5 + (i/frameCount)*45);
       }
     }
+    motionT = null;
     gif.on('progress', p=> setProgress(50 + p*50));
     gif.on('finished', (blob)=>{
       download(URL.createObjectURL(blob), 'inspocult.gif');
@@ -3656,6 +3760,7 @@ document.getElementById('expGif').onclick = ()=>{
     gif.render();
   }catch(err){
     console.error(err);
+    motionT = null;
     setStatus('GIF export failed — see console.'); setProgress(0); setExportingUI(false);
   }
   });
@@ -3686,6 +3791,7 @@ async function recordCanvasVideo(){
       const dur = Math.max(...vids.map(v=>v.duration||4));
       const t0 = performance.now();
       function loop(){
+        motionT = (performance.now()-t0)/1000;
         draw();
         const elapsed=(performance.now()-t0)/1000;
         setProgress(Math.min(95,(elapsed/dur)*95));
@@ -3695,17 +3801,19 @@ async function recordCanvasVideo(){
       loop();
     } else {
       recorder.start();
-      const dur = 3.0; const t0 = performance.now();
+      const moving = hasMotion();
+      const dur = moving ? MOTION.cycle*2 : 3.0; const t0 = performance.now();
       function loop(){
         const elapsed=(performance.now()-t0)/1000;
         const t = Math.min(1, elapsed/dur);
-        draw(t);
+        if(moving){ motionT = Math.min(elapsed, dur - 1e-3); draw(); } else draw(t);
         setProgress(Math.min(95, t*95));
         if(t<1){ requestAnimationFrame(loop); } else { recorder.stop(); }
       }
       loop();
     }
     await done;
+    motionT = null;
     const blob = new Blob(chunks, { type: mime.split(';')[0] });
     draw();
     if(vids.length){ vids.forEach(v=>{ v.loop = true; v.play(); }); videoLoop(); }
@@ -3723,6 +3831,7 @@ document.getElementById('expMp4').onclick = ()=>{
     setProgress(0); setExportingUI(false);
   }catch(err){
     console.error(err);
+    motionT = null;
     setStatus('Video export failed — see console.'); setProgress(0); setExportingUI(false);
   }
   });
