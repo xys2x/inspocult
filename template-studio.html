@@ -594,6 +594,14 @@ function refreshBgLayoutButtons(){
   });
 }
 function anyCellVideo(){ return bg.cells.some(c=>c.type==='video' && c.el); }
+// every video on the canvas: background cells, photo/video slots and shape fills
+function allVideos(){
+  const isV = v => v && v.tagName==='VIDEO';
+  const out = bg.cells.filter(c=>c.type==='video' && isV(c.el)).map(c=>c.el);
+  elements.forEach(e=>{ if(isV(e.el)) out.push(e.el); if(isV(e.fillEl)) out.push(e.fillEl); });
+  return [...new Set(out)];
+}
+function vidDur(v, fallback){ const d=v.duration; return (isFinite(d) && d>0) ? d : fallback; }
 function anyVideoAnywhere(){
   return anyCellVideo() || elements.some(el =>
     (el.type==='image' && el.el instanceof HTMLVideoElement) ||
@@ -3463,6 +3471,43 @@ window.addEventListener('pl-stickers', renderStickers);
 setTimeout(renderStickers, 0);
 
 // =========================== UPLOADS ======================================
+// Phones (iPhone Safari especially) don't load a video that isn't on the page and
+// hasn't been asked to play, and sometimes give the file no type. These two
+// helpers make video uploads work there as well as on a computer.
+function isVideoFile(file){
+  return (file.type||'').startsWith('video') || /\.(mov|mp4|m4v|webm|3gp|avi|mkv)$/i.test(file.name||'');
+}
+let videoHolder = null;
+function loadVideoEl(url, onReady){
+  if(!videoHolder){
+    videoHolder = document.createElement('div');
+    videoHolder.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none;z-index:-1;';
+    document.body.appendChild(videoHolder);
+  }
+  const v = document.createElement('video');
+  v.muted = true; v.defaultMuted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+  v.setAttribute('muted',''); v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline','');
+  v.style.cssText = 'width:2px;height:2px;';
+  videoHolder.appendChild(v);
+  let done = false;
+  const ready = ()=>{
+    if(done || v.readyState < 2) return;
+    done = true; clearTimeout(slow);
+    v.play().catch(()=>{});
+    setStatus('Video added.');
+    onReady(v);
+  };
+  ['loadeddata','canplay','canplaythrough','playing'].forEach(ev=> v.addEventListener(ev, ready));
+  v.addEventListener('error', ()=>{
+    if(done) return; done = true; clearTimeout(slow); v.remove();
+    setStatus('This video couldn\u2019t be opened in this browser. Try an MP4 (on iPhone: Settings \u203a Camera \u203a Formats \u203a Most Compatible).');
+  });
+  const slow = setTimeout(()=>{ if(!done) setStatus('Still loading your video\u2026 big videos can take a moment on a phone.'); }, 4000);
+  setStatus('Loading video\u2026');
+  v.src = url;
+  v.load();
+  v.play().catch(()=>{});   // iPhone only starts fetching the video once play() is called
+}
 document.getElementById('btnUploadBg').onclick = ()=>{
   activeBgUploadIndex = (selectedId && selectedId.startsWith('__bg_')) ? parseInt(selectedId.slice(5)) : 0;
   document.getElementById('fileInputBg').click();
@@ -3472,10 +3517,8 @@ document.getElementById('fileInputBg').addEventListener('change', (e)=>{
   const idx = activeBgUploadIndex;
   const cell = bg.cells[idx]; if(!cell){ e.target.value=''; return; }
   const url = URL.createObjectURL(file);
-  if(file.type.startsWith('video')){
-    const v = document.createElement('video');
-    v.src = url; v.muted = true; v.loop = true; v.playsInline = true;
-    v.addEventListener('loadeddata', ()=>{
+  if(isVideoFile(file)){
+    loadVideoEl(url, v=>{
       cell.type='video'; cell.el=v; cell.src=url; cell.focalX=.5; cell.focalY=.5; cell.zoom=1;
       v.play(); videoLoop(); refreshAllThumbnails(); renderLayerList(); renderProps();
     });
@@ -3490,10 +3533,8 @@ document.getElementById('fileInputImg').addEventListener('change',(e)=>{
   const file = e.target.files[0]; if(!file) return;
   const el = elements.find(x=>x.id===selectedId); if(!el) return;
   const url = URL.createObjectURL(file);
-  if(file.type.startsWith('video')){
-    const v = document.createElement('video');
-    v.src = url; v.muted = true; v.loop = true; v.playsInline = true;
-    v.addEventListener('loadeddata', ()=>{
+  if(isVideoFile(file)){
+    loadVideoEl(url, v=>{
       el.el = v; el.src=url; el.focalX=.5; el.focalY=.5; el.zoom=1;
       v.play(); videoLoop(); draw(); renderProps(); refreshAllThumbnails();
     });
@@ -3508,10 +3549,8 @@ document.getElementById('fileInputRectFill').addEventListener('change',(e)=>{
   const file = e.target.files[0]; if(!file) return;
   const el = elements.find(x=>x.id===selectedId); if(!el) return;
   const url = URL.createObjectURL(file);
-  if(file.type.startsWith('video')){
-    const v = document.createElement('video');
-    v.src = url; v.muted = true; v.loop = true; v.playsInline = true;
-    v.addEventListener('loadeddata', ()=>{
+  if(isVideoFile(file)){
+    loadVideoEl(url, v=>{
       el.fillEl = v; el.fillSrc=url; el.focalX=.5; el.focalY=.5; el.zoom=1;
       v.play(); videoLoop(); draw(); renderProps(); refreshAllThumbnails();
     });
@@ -3770,16 +3809,16 @@ document.getElementById('expGif').onclick = ()=>{
     const gif = new GIF({ workers:3, quality:8, workerScript: workerUrl, width:W, height:H, repeat:0 });
 
     const fps = 12;
-    const vids = bg.cells.filter(c=>c.type==='video' && c.el).map(c=>c.el);
+    const vids = allVideos();
     if(vids.length){
-      const dur = Math.min(4, Math.max(...vids.map(v=>v.duration||3)));
+      const dur = Math.min(GIF_MAX_SECONDS, Math.max(...vids.map(v=>vidDur(v,3))));
       const frameCount = Math.round(dur*fps);
       const wasPlaying = vids.map(v=>!v.paused);
       vids.forEach(v=>v.pause());
       for(let i=0;i<frameCount;i++){
         motionT = i/fps;
         await Promise.all(vids.map(v=> new Promise(res=>{
-          const t = ((i/frameCount)*dur) % (v.duration||dur);
+          const t = ((i/frameCount)*dur) % vidDur(v,dur);
           const h=()=>{ v.removeEventListener('seeked',h); res(); };
           v.addEventListener('seeked',h);
           v.currentTime = t;
@@ -3826,6 +3865,8 @@ document.getElementById('expGif').onclick = ()=>{
 
 // Records the canvas as a video and resolves to { blob, mime, ext }. Used by the
 // MP4 export button and by the planner's "Add to planner" (video option).
+const MP4_MAX_SECONDS = 60;   // longest video an MP4 export records
+const GIF_MAX_SECONDS = 6;    // GIFs get huge quickly, so they stay short
 async function recordCanvasVideo(){
     selectedId=null;
     const fps = 30;
@@ -3841,19 +3882,33 @@ async function recordCanvasVideo(){
     recorder.ondataavailable = (e)=>{ if(e.data.size>0) chunks.push(e.data); };
     const done = new Promise(res=> recorder.onstop = res);
 
-    const vids = bg.cells.filter(c=>c.type==='video' && c.el).map(c=>c.el);
+    const vids = allVideos();
     if(vids.length){
-      vids.forEach(v=>{ v.currentTime = 0; });
+      // rewind every video and wait until each is ready at 0 s, so nothing is cut
+      await Promise.all(vids.map(v=> new Promise(res=>{
+        v.pause();
+        if(v.currentTime===0) return res();
+        const h=()=>{ v.removeEventListener('seeked',h); res(); };
+        v.addEventListener('seeked',h); v.currentTime = 0;
+        setTimeout(res, 1500);
+      })));
+      // some files (WhatsApp / WebM) don't know their length until scanned to the end
+      for(const v of vids){
+        if(!isFinite(v.duration)){
+          await new Promise(res=>{ const h=()=>{ v.removeEventListener('seeked',h); res(); }; v.addEventListener('seeked',h); v.currentTime=1e9; setTimeout(res,3000); });
+          await new Promise(res=>{ const h=()=>{ v.removeEventListener('seeked',h); res(); }; v.addEventListener('seeked',h); v.currentTime=0; setTimeout(res,1500); });
+        }
+      }
+      const dur = Math.min(MP4_MAX_SECONDS, Math.max(...vids.map(v=>vidDur(v,4))));
       recorder.start();
-      vids.forEach(v=>v.play());
-      const dur = Math.max(...vids.map(v=>v.duration||4));
+      await Promise.all(vids.map(v=>v.play().catch(()=>{})));
       const t0 = performance.now();
       function loop(){
         motionT = (performance.now()-t0)/1000;
         draw();
         const elapsed=(performance.now()-t0)/1000;
         setProgress(Math.min(95,(elapsed/dur)*95));
-        if(elapsed < dur && anyCellVideo()){ requestAnimationFrame(loop); }
+        if(elapsed < dur){ requestAnimationFrame(loop); }
         else { recorder.stop(); }
       }
       loop();
