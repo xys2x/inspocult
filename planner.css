@@ -381,6 +381,40 @@
 .pl .sticky textarea{ flex:1; min-height:330px; width:100%; resize:none; background:transparent; border:none; outline:none; padding:0; margin:0;
   font-family:'Caveat', cursive; font-size:22px; line-height:30px; color:#3b2f1e; }
 .pl .sticky textarea::placeholder{ color:rgba(91,69,36,.45); }
+.pl .sticky-top .sticky-head{ white-space:nowrap; }
+.pl .sticky-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.pl .memo-tabs{ display:flex; gap:2px; background:rgba(91,69,36,.1); border-radius:999px; padding:2px; margin-top:2px; }
+.pl .memo-tabs button{ white-space:nowrap; border:none; background:none; font:600 10px/1 var(--mono); letter-spacing:.04em; text-transform:uppercase; color:rgba(59,47,30,.6); padding:6px 8px; border-radius:999px; cursor:pointer; }
+.pl .memo-tabs button.on{ background:#3b2f1e; color:#F5E3A3; }
+.pl .sticky[data-mode="list"] textarea{ display:none; }
+.pl .sticky[data-mode="note"] .memo-list{ display:none; }
+.pl .memo-list{ flex:1; min-height:330px; display:flex; flex-direction:column; }
+.pl .memo-prog{ margin:0 0 10px; }
+.pl .memo-prog[hidden]{ display:none; }
+.pl .memo-prog-txt{ margin-bottom:5px; }
+.pl .memo-prog-msg{ margin-top:4px; font-family:'Caveat', cursive; font-size:18px; color:#5b4524; line-height:1.1; }
+.pl .memo-prog-txt b{ font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.04em; color:#3b2f1e; white-space:nowrap; }
+.pl .memo-bar{ height:10px; border-radius:999px; background:rgba(91,69,36,.15); overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.12); }
+.pl .memo-bar i{ display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg, #FFB6C8, #FFD1DC); transition:width .45s cubic-bezier(.2,.8,.2,1), background .3s; }
+.pl .memo-bar i.full{ background:linear-gradient(90deg, #8fb085, #A8BFA0); }
+.pl .memo-items{ list-style:none; margin:0; padding:0; }
+.pl .memo-items li{ display:flex; align-items:center; gap:8px; min-height:30px; }
+.pl .sticky input.memo-new, .pl .memo-items input[type="text"]{ background:transparent; border-radius:0; box-shadow:none; }
+.pl .memo-items input{ flex:1; min-width:0; background:transparent; border:none; outline:none; padding:0; font-family:'Caveat', cursive; font-size:21px; line-height:30px; color:#3b2f1e; }
+.pl .memo-items input[type="text"]{ border:none; padding:0; }
+.pl .memo-items input:focus{ background:rgba(255,255,255,.35); border-radius:4px; }
+.pl .memo-chk{ flex:0 0 auto; width:20px; height:20px; border-radius:6px; border:2px solid #5b4524; background:rgba(255,255,255,.35); color:#fff; font:700 13px/16px var(--mono); text-align:center; padding:0; cursor:pointer; }
+.pl .memo-chk:hover{ background:rgba(255,255,255,.7); }
+.pl .memo-items.done .memo-chk{ background:#7f9c75; border-color:#7f9c75; }
+.pl .memo-items.done input{ text-decoration:line-through; text-decoration-color:rgba(59,47,30,.5); color:rgba(59,47,30,.5); }
+.pl .memo-x{ flex:0 0 auto; border:none; background:none; color:rgba(91,69,36,.45); font-size:18px; line-height:1; cursor:pointer; padding:0 2px; opacity:0; }
+.pl .memo-items li:hover .memo-x, .pl .memo-items li:focus-within .memo-x{ opacity:1; }
+@media (hover:none){ .pl .memo-x{ opacity:1; } }
+.pl .sticky input.memo-new{ width:100%; border:none; border-bottom:1.5px dashed rgba(91,69,36,.35); outline:none; padding:0 0 0 28px; font-family:'Caveat', cursive; font-size:21px; line-height:30px; color:#3b2f1e; }
+.pl .sticky input.memo-new::placeholder{ color:rgba(91,69,36,.5); }
+.pl .sticky input.memo-new:focus{ background:rgba(255,255,255,.3);  border-bottom-color:#5b4524; }
+.pl .memo-done-h{ margin:14px 0 2px; font-family:var(--mono); font-size:9.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:#6d8a63; }
+.pl .memo-done-h[hidden]{ display:none; }
 .pl .sticky-foot{ margin-top:8px; font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:rgba(91,69,36,.6); }
 @media (max-width:980px){
   /* phones/tablets: the note sits above the board and both scroll together (no overlap) */

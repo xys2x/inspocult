@@ -714,10 +714,24 @@ function injectUI(){
     <div class="ins-body">
       <div class="view" id="insView"></div>
       <aside class="ins-side">
-        <div class="sticky">
+        <div class="sticky" id="insSticky" data-mode="list">
           <span class="sticky-tape"></span>
-          <div class="sticky-head">remember ✎</div>
-          <textarea id="insMemo" spellcheck="true" placeholder="things to remember for later…&#10;&#10;– props to buy&#10;– golden hour is at 17:40&#10;– ask Ana to take the photo"></textarea>
+          <div class="sticky-top">
+            <div class="sticky-head">remember ✎</div>
+            <div class="memo-tabs"><button type="button" data-mm="list">☑ to-do</button><button type="button" data-mm="note">✎ note</button></div>
+          </div>
+          <div class="memo-list" id="memoList">
+            <div class="memo-prog" id="memoProg">
+              <div class="memo-prog-txt"><b id="memoProgNum">0 of 0 done</b></div>
+              <div class="memo-bar"><i id="memoBar"></i></div>
+              <div class="memo-prog-msg" id="memoProgMsg"></div>
+            </div>
+            <ul class="memo-items" id="memoTodo"></ul>
+            <input type="text" class="memo-new" id="memoNew" placeholder="+ add something to do" maxlength="200" enterkeyhint="done">
+            <div class="memo-done-h" id="memoDoneH">done ✓</div>
+            <ul class="memo-items done" id="memoDone"></ul>
+          </div>
+          <textarea id="insMemo" spellcheck="true" placeholder="things to remember for later…&#10;&#10;golden hour is at 17:40&#10;ask Ana to take the photo"></textarea>
           <div class="sticky-foot" id="insMemoState">saved to your account</div>
         </div>
       </aside>
@@ -1730,27 +1744,95 @@ function setMyVersion(slide){
   toast(`Your version is added ✓ ${HOVER ? 'Hover over' : 'Tap'} the picture to see it`);
 }
 
-// ---- sticky note ("remember") ----
+// ---- sticky note ("remember"): a to-do checklist + a free note ----
+// Both live in the one synced `note` text: checklist lines are "[ ] thing" / "[x] thing",
+// every other line is the free note. Old notes keep working as plain notes.
 const memoRec = () => owned().filter(p => p.kind==='memo').sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0))[0];
+let memoItems = [], memoNote = '';
+const MEMO_LINE = /^\[( |x|X)\] ?(.*)$/;
+function parseMemo(text){
+  const items = [], note = [];
+  (text || '').split('\n').forEach(l => { const m = l.match(MEMO_LINE); if(m) items.push({ text:m[2], done:m[1]!==' ' }); else note.push(l); });
+  return { items, note: note.join('\n').replace(/\s+$/, '') };
+}
+const serializeMemo = () => [memoNote.replace(/\s+$/, ''), ...memoItems.filter(i => i.text.trim()).map(i => `[${i.done?'x':' '}] ${i.text.trim()}`)].filter(Boolean).join('\n');
+const escMemo = t => t.replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+function memoMode(m){
+  const st = $('#insSticky'); if(!st) return;
+  if(m){ st.dataset.mode = m; try{ localStorage.setItem('inspocult-memo-mode', m); }catch(e){} }
+  $$('#insSticky .memo-tabs button').forEach(b => b.classList.toggle('on', b.dataset.mm===st.dataset.mode));
+}
+function renderMemoProgress(){
+  const total = memoItems.filter(i => i.text.trim()).length, done = memoItems.filter(i => i.done && i.text.trim()).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  $('#memoProg').hidden = !total;
+  $('#memoProgNum').textContent = `${done} of ${total} done · ${pct}%`;
+  $('#memoProgMsg').textContent = !total ? '' : pct===100 ? 'all done — you did it! 🎉' : pct>=75 ? 'almost there ✨' : pct>=50 ? 'more than halfway 💪' : done ? 'nice start, keep going' : "let's do this ☀";
+  const bar = $('#memoBar'); bar.style.width = pct + '%'; bar.classList.toggle('full', pct===100);
+  $('#memoDoneH').hidden = !done;
+}
+function renderMemoList(){
+  const row = (it, i) => `<li data-i="${i}"><button type="button" class="memo-chk" data-chk="${i}" aria-label="${it.done?'Mark as not done':'Mark as done'}">${it.done?'✓':''}</button><input type="text" value="${escMemo(it.text)}" data-txt="${i}" maxlength="200" aria-label="To-do item"><button type="button" class="memo-x" data-del="${i}" aria-label="Remove">×</button></li>`;
+  $('#memoTodo').innerHTML = memoItems.map((it,i) => it.done ? '' : row(it,i)).join('');
+  $('#memoDone').innerHTML = memoItems.map((it,i) => it.done ? row(it,i) : '').join('');
+  renderMemoProgress();
+}
 function renderMemo(){
-  const ta = $('#insMemo'); if(!ta || document.activeElement===ta) return;   // never overwrite while typing
-  const r = memoRec(); ta.value = r ? (r.note || '') : '';
+  const st = $('#insSticky'); if(!st || st.contains(document.activeElement)) return;   // never overwrite while typing
+  const r = memoRec(); const d = parseMemo(r ? r.note : '');
+  memoItems = d.items; memoNote = d.note;
+  $('#insMemo').value = memoNote;
+  renderMemoList();
 }
 let memoTimer = null;
-function onMemoInput(e){
+function saveMemo(){
   let r = memoRec();
   if(!r){
     r = { id:`notes-${me.id}`, owner:me.id, kind:'memo', note:'', status:'', date:iso(today()), time:'00:00', formats:[], caption:'', tags:'', title:'',
       slides:[], thumb:null, created:Date.now(), updatedAt:Date.now(), dirty:true, synced:false, orphans:[] };
     store.push(r);
   }
-  r.note = e.target.value; touchSoon(r);
-  const st = $('#insMemoState'); st.textContent = 'saving\u2026';
+  r.note = serializeMemo(); touchSoon(r);
+  const st = $('#insMemoState'); st.textContent = 'saving…';
   clearTimeout(memoTimer); memoTimer = setTimeout(() => { st.textContent = 'saved to your account'; }, 1400);
+}
+function bindMemo(){
+  let mode = 'list'; try{ mode = localStorage.getItem('inspocult-memo-mode') || 'list'; }catch(e){}
+  memoMode(mode);
+  $$('#insSticky .memo-tabs button').forEach(b => b.onclick = () => memoMode(b.dataset.mm));
+  $('#insMemo').addEventListener('input', e => { memoNote = e.target.value; saveMemo(); });
+  const add = $('#memoNew');
+  add.addEventListener('keydown', e => {
+    if(e.key!=='Enter' || e.isComposing) return;
+    e.preventDefault();
+    const t = add.value.trim(); if(!t) return;
+    memoItems.push({ text:t, done:false }); add.value = '';
+    renderMemoList(); saveMemo();
+  });
+  const list = $('#memoList');
+  list.addEventListener('click', e => {
+    const c = e.target.closest('[data-chk]');
+    if(c){ const it = memoItems[+c.dataset.chk]; it.done = !it.done; renderMemoList(); saveMemo(); return; }
+    const x = e.target.closest('[data-del]');
+    if(x){ memoItems.splice(+x.dataset.del, 1); renderMemoList(); saveMemo(); }
+  });
+  list.addEventListener('input', e => {
+    const t = e.target.closest('[data-txt]'); if(!t) return;
+    memoItems[+t.dataset.txt].text = t.value; renderMemoProgress(); saveMemo();
+  });
+  list.addEventListener('keydown', e => {
+    const t = e.target.closest('[data-txt]'); if(!t) return;
+    if(e.key==='Enter' && !e.isComposing){ e.preventDefault(); add.focus(); }
+    else if(e.key==='Backspace' && t.value===''){ e.preventDefault(); memoItems.splice(+t.dataset.txt, 1); renderMemoList(); saveMemo(); add.focus(); }
+  });
+  list.addEventListener('focusout', e => {
+    const t = e.target.closest('[data-txt]'); if(!t || t.value.trim()) return;
+    setTimeout(() => { const i = memoItems.findIndex(it => !it.text.trim()); if(i>=0){ memoItems.splice(i,1); renderMemoList(); saveMemo(); } }, 0);
+  });
 }
 
 function bindInspo(){
-  $('#insMemo').addEventListener('input', onMemoInput);
+  bindMemo();
   $('#insAddBtn').onclick = () => { uploadMode='inspo'; $('#plFileIn').click(); };
   $$('#insFilter button').forEach(b => b.onclick = () => { inspoFilter = b.dataset.f; renderInspo(); });
   const v = $('#insView');

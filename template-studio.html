@@ -16,7 +16,7 @@
 <!-- AdSense publisher ID: ca-pub-4805663093054929 (real). The data-ad-slot
      values further down are still placeholders until AdSense gives real slot IDs. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4805663093054929" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="planner.css?v=2026-11-09f">
+<link rel="stylesheet" href="planner.css?v=2026-11-19b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Pacifico&family=Playfair+Display:wght@400;600;700&family=Bebas+Neue&family=Caveat:wght@500;700&family=DM+Serif+Display&family=Space+Grotesk:wght@400;500;600;700&family=Anton&family=Abril+Fatface&family=Lobster&family=Dancing+Script:wght@500;700&family=Fredoka:wght@400;500;600;700&family=Archivo+Black&family=Courier+Prime:wght@400;700&family=Yellowtail&family=Josefin+Sans:wght@400;500;600;700&family=Great+Vibes&family=Italianno&family=Chewy&family=Patrick+Hand&family=Press+Start+2P&family=VT323&family=Kalam:wght@400;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
@@ -117,7 +117,7 @@
   #stage-wrap{
     position:relative; overflow:auto; background:
       radial-gradient(circle at 1px 1px, rgba(255,255,255,.08) 1px, transparent 1px) 0 0/22px 22px, var(--site-bg);
-    display:flex; align-items:center; justify-content:center; padding:30px 30px 70px;
+    display:flex; align-items:center; justify-content:center; padding:30px 30px 84px;
   }
   #stage{ position:relative; box-shadow:0 30px 60px -20px rgba(0,0,0,.45); }
   /* carousel slides strip */
@@ -158,19 +158,20 @@
   .gline .gtag{ position:absolute; font:500 9px/1 var(--mono); color:#001a24; background:#00c2ff; padding:3px 5px; border-radius:3px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .12s; }
   .gline:hover .gtag, .gline.drag .gtag{ opacity:1; }
   .gline.v .gtag{ top:6px; left:9px; } .gline.h .gtag{ left:6px; top:-14px; }
-  #stage-wrap.rulers-on #stageCaption{ bottom:-58px; }
   #stage-wrap.has-slidebar.rulers-on{ padding-top:116px; padding-left:40px; }
   .edit-box{ position:absolute; border:1.5px dashed rgba(201,162,39,.9); pointer-events:none; }
   textarea.inline-edit{
     position:absolute; resize:none; border:1.5px solid var(--gold); background:rgba(255,255,255,.96);
     color:#111; font-family:inherit; padding:2px; pointer-events:all; outline:none; border-radius:2px;
   }
+  /* hint sits BELOW the canvas, wider than it, so it never covers the design */
   #stageCaption{
-    position:absolute; bottom:-52px; left:0; right:0; text-align:center;
+    position:absolute; top:calc(100% + 16px); left:50%; transform:translateX(-50%);
+    width:max-content; max-width:min(720px, 90vw); text-align:center; pointer-events:none;
   }
   #stageCaption span{
-    display:inline-block; font-family:var(--mono); font-size:10.5px; color:var(--brand-yellow);
-    letter-spacing:.08em; background:rgba(0,0,0,.5); padding:6px 14px; border-radius:999px;
+    display:inline-block; font-family:var(--mono); font-size:10px; line-height:1.6; color:var(--brand-yellow);
+    letter-spacing:.06em; background:rgba(0,0,0,.4); padding:5px 14px; border-radius:12px; opacity:.85;
   }
 
   /* ---------- Right: properties / layers / export ---------- */
@@ -421,7 +422,7 @@
         <canvas id="rulerLeft" class="ruler" hidden title="Drag right from here to add a guide line"></canvas>
         <div id="rulerCorner" class="ruler" hidden title="px"></div>
         <div id="editOverlayLayer"></div>
-        <div id="stageCaption"><span>click to select · double-click text to edit · drag corner to resize · drag the knob above to rotate · use "Reposition photo" to pan/zoom a photo in its frame</span></div>
+        <div id="stageCaption"><span>click to select · double-click text to edit · drag a corner to resize · drag the top knob to rotate · “Reposition photo” pans &amp; zooms</span></div>
       </div>
     </div>
 
@@ -4097,6 +4098,8 @@ function fitStage(){
   const maxH = wrap.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 4;
   const scale = Math.max(0.05, Math.min(maxW/W, maxH/H, 1));
   const w = Math.floor(W*scale), h = Math.floor(H*scale);   // whole pixels: no sub-pixel back-and-forth
+  const cap = document.getElementById('stageCaption');
+  if(cap) cap.style.maxWidth = Math.max(w, Math.min(720, wrap.clientWidth - 40)) + 'px';   // never wider than the middle area
   if(canvas.style.width === w+'px' && canvas.style.height === h+'px') return; // nothing changed
   canvas.style.width = w+'px';
   canvas.style.height = h+'px';
@@ -4750,7 +4753,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="planner.js?v=2026-11-19a"></script>
+<script src="planner.js?v=2026-11-19b"></script>
 <script src="cutout.js?v=2026-11-09e"></script>
 </body>
 </html>
