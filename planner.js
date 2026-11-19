@@ -1357,21 +1357,21 @@ function refreshAtpAll(){
   box.hidden = !list || atp.mode==='thumb' || atp.mode==='replace';
   if(list) $('#plAtpAllN').textContent = list.length;
   $('#plAtpAllChk').disabled = !can;
-  $('#plAtpAllNote').textContent = atp.file==='mp4' ? 'A video adds only the slide on screen — pick PNG or JPEG to add all slides.' : 'Untick to add only the slide on screen.';
+  $('#plAtpAllNote').textContent = atp.file==='mp4' ? 'A video adds only the slide on screen — pick PNG or JPEG to add all slides.' : 'Moving slides are added as GIFs. Untick to add only the slide on screen.';
 }
 async function captureAllSlides(kind){
   const list = studioSlides(); if(!list) return [await captureStudio(kind)];
-  const mime = kind==='jpeg' ? 'image/jpeg' : 'image/png';
   const stamp = new Date(), base = `inspocult-${iso(stamp)}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}`;
+  // moving slides (video / animation) come back as GIFs, the rest as PNG/JPEG
+  const files = await slideFiles(kind==='jpeg' ? 'jpg' : 'png', base);
   const off = document.createElement('canvas'); off.width = W; off.height = H;
   const oc = off.getContext('2d');
   const out = [];
-  for(let i=0;i<list.length;i++){
+  for(let i=0;i<files.length;i++){
     oc.clearRect(0, 0, W, H);
     renderSlideTo(list[i], oc, W, H);
     const preview = await previewFromSource(off, W, H);
-    const blob = await new Promise((res, rej) => off.toBlob(b => b ? res(b) : rej(new Error('Slide could not be saved')), mime, 0.94));
-    out.push({ id:uid(), type:'image', mime, blob, w:W, h:H, preview, name:`${base}-${String(i+1).padStart(2,'0')}.${extFor(mime)}` });
+    out.push({ id:uid(), type:'image', mime:files[i].mime, blob:files[i].blob, w:W, h:H, preview, name:files[i].name });
   }
   try{ draw(); }catch(e){}
   return out;

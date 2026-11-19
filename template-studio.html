@@ -140,6 +140,26 @@
   .ea-note{ margin:8px 0 0; font-size:11px; line-height:1.5; color:#8b856f; }
   #stage canvas{ display:block; background:#000; border-radius:2px; }
   #editOverlayLayer{ position:absolute; inset:0; pointer-events:none; }
+  /* rulers + guides (only on screen — never in exports) */
+  #stage{ --rs:20px; }
+  .ruler{ position:absolute; background:#1a1812; touch-action:none; z-index:3; }
+  .ruler[hidden]{ display:none; }
+  #rulerTop{ left:0; top:calc(-1 * var(--rs) - 2px); width:100%; height:var(--rs); cursor:row-resize; border-radius:3px 3px 0 0; }
+  #rulerLeft{ top:0; left:calc(-1 * var(--rs) - 2px); width:var(--rs); height:100%; cursor:col-resize; border-radius:3px 0 0 3px; }
+  #rulerCorner{ left:calc(-1 * var(--rs) - 2px); top:calc(-1 * var(--rs) - 2px); width:var(--rs); height:var(--rs); border-radius:3px 0 0 0;
+    font:500 8px/var(--rs) var(--mono); color:#6f6852; text-align:center; }
+  #guideLayer{ position:absolute; inset:0; pointer-events:none; z-index:2; }
+  .gline{ position:absolute; pointer-events:auto; touch-action:none; }
+  .gline::after{ content:''; position:absolute; background:#00c2ff; box-shadow:0 0 0 .5px rgba(0,0,0,.35); }
+  .gline.v{ top:0; bottom:0; width:11px; margin-left:-5px; cursor:col-resize; }
+  .gline.v::after{ left:5px; top:0; bottom:0; width:1px; }
+  .gline.h{ left:0; right:0; height:11px; margin-top:-5px; cursor:row-resize; }
+  .gline.h::after{ top:5px; left:0; right:0; height:1px; }
+  .gline .gtag{ position:absolute; font:500 9px/1 var(--mono); color:#001a24; background:#00c2ff; padding:3px 5px; border-radius:3px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .12s; }
+  .gline:hover .gtag, .gline.drag .gtag{ opacity:1; }
+  .gline.v .gtag{ top:6px; left:9px; } .gline.h .gtag{ left:6px; top:-14px; }
+  #stage-wrap.rulers-on #stageCaption{ bottom:-58px; }
+  #stage-wrap.has-slidebar.rulers-on{ padding-top:116px; padding-left:40px; }
   .edit-box{ position:absolute; border:1.5px dashed rgba(201,162,39,.9); pointer-events:none; }
   textarea.inline-edit{
     position:absolute; resize:none; border:1.5px solid var(--gold); background:rgba(255,255,255,.96);
@@ -165,6 +185,8 @@
     border-radius:5px; padding:7px 8px; font-family:var(--body); font-size:12.5px;
   }
   textarea.propbox{ min-height:52px; resize:vertical; }
+  /* the Content box shows at least 10 lines, grows with the text, and only scrolls past ~24 lines */
+  textarea#p_text{ line-height:1.45; min-height:calc(10 * 1.45em + 18px); max-height:calc(24 * 1.45em + 18px); overflow-y:auto; }
   /* font picker: each name written in its own font */
   .fontpick{ position:relative; margin-bottom:8px; }
   .fp-btn, .fp-opt{ width:100%; display:flex; align-items:baseline; gap:8px; background:#0e0d0a; color:#fff; border:1px solid var(--panel-line); border-radius:5px; padding:8px 10px; cursor:pointer; text-align:left; }
@@ -234,7 +256,20 @@
   #right select#aspect{ width:100%; }
   /* ---------- undo / redo / clear in the top bar ---------- */
   #historyBar{ gap:6px; }
-  #historyBar .btn:disabled{ opacity:.35; cursor:default; }
+  #historyBar .hist-btn{ background:var(--gold); color:#3a2f0b; border-color:var(--gold); font-weight:700; font-size:11.5px; padding:7px 12px; }
+  #historyBar .hist-btn:hover:not(:disabled){ background:var(--gold-dim); border-color:var(--gold-dim); color:#3a2f0b; }
+  #historyBar .hist-btn:disabled{ opacity:.45; cursor:default; }
+  #historyBar .clear-btn{ border-color:var(--gold); color:var(--gold); font-weight:600; }
+  #historyBar .clear-btn:hover{ background:rgba(245,227,163,.14); color:var(--gold-dim); border-color:var(--gold-dim); }
+  #historyBar .btn:disabled{ cursor:default; }
+  .slidenum{ display:flex; align-items:center; gap:8px; }
+  .slidenum input[type=range]{ flex:1; min-width:0; }
+  .sn-box{ flex:0 0 auto; display:inline-flex; align-items:center; gap:2px; }
+  .sn-box input[type=number]{ width:62px; padding:5px 6px; text-align:center; }
+  .sn-box i{ font-style:normal; font-size:11px; color:#8b856f; width:10px; }
+  .align-icons{ display:flex; gap:4px; }
+  .align-icons .btn{ flex:1; justify-content:center; padding:6px 0; }
+  .align-icons svg{ width:16px; height:14px; display:block; }
   .hist-sep{ width:1px; height:20px; background:var(--panel-line); margin:0 4px; }
   /* ---------- right-click menu ---------- */
   .ctx-menu{ position:fixed; z-index:9000; min-width:210px; padding:6px; background:#1f1c15; border:1px solid #3d3826; border-radius:10px; box-shadow:0 18px 40px -12px rgba(0,0,0,.7); }
@@ -304,6 +339,8 @@
   #stage-wrap{ padding:16px 16px 60px; }
   #stage-wrap.has-slidebar{ padding-top:84px; }
   #slideBar{ top:8px; left:8px; right:8px; }
+  #stage{ --rs:15px; }
+  #stage-wrap.has-slidebar.rulers-on{ padding-top:104px; padding-left:28px; }
   #slideBar .sb-btn{ padding:9px 10px; }
   #stageCaption{ display:none; } /* the long hint text doesn't fit small screens; the tap targets are still there */
 
@@ -329,6 +366,7 @@
   .sticker-grid .stk:hover .x{ opacity:1; }
   .sticker-note{ margin:8px 0 0; font-size:11.5px; line-height:1.5; color:#8b856f; }
   .sticker-note:empty{ display:none; }
+#p_motion.flash{ outline:2px solid #f2c94c; outline-offset:2px; transition:outline-color .3s; }
 </style>
 </head>
 <body>
@@ -342,8 +380,8 @@
       <button class="btn small hist-btn" id="undoBtn" title="Undo (⌘Z)" disabled>↶ Undo</button>
       <button class="btn small hist-btn" id="redoBtn" title="Redo (⇧⌘Z)" disabled>↷ Redo</button>
       <span class="hist-sep"></span>
-      <button class="btn small" id="clearTplBtn" title="Reset this template to how it started">Clear this template</button>
-      <button class="btn small" id="clearAllBtn" title="Reset every template you've edited">Clear all templates</button>
+      <button class="btn small clear-btn" id="clearTplBtn" title="Reset this template to how it started">Clear this template</button>
+      <button class="btn small clear-btn" id="clearAllBtn" title="Reset every template you've edited">Clear all templates</button>
     </div>
     <input type="file" id="fileInputBg" accept="image/*,video/*">
   </div>
@@ -378,6 +416,10 @@
       <div id="slideBar" aria-label="Carousel slides"></div>
       <div id="stage">
         <canvas id="canvas" width="1080" height="1350"></canvas>
+        <div id="guideLayer"></div>
+        <canvas id="rulerTop" class="ruler" hidden title="Drag down from here to add a guide line"></canvas>
+        <canvas id="rulerLeft" class="ruler" hidden title="Drag right from here to add a guide line"></canvas>
+        <div id="rulerCorner" class="ruler" hidden title="px"></div>
         <div id="editOverlayLayer"></div>
         <div id="stageCaption"><span>click to select · double-click text to edit · drag corner to resize · drag the knob above to rotate · use "Reposition photo" to pan/zoom a photo in its frame</span></div>
       </div>
@@ -429,8 +471,7 @@
           <button class="btn small" id="addText">+ Text</button>
           <button class="btn small" id="addPhoto">+ Photo/Vid slot</button>
           <button class="btn small" id="addEmoji">+ Icon</button>
-          <button class="btn small" id="addStar">+ ★ Moving star</button>
-          <button class="btn small" id="addBeads">+ ● Bead letters</button>
+          <button class="btn small" id="addStar" title="Makes the selected photo, icon, shape or text move. With nothing selected, adds a moving ★">+ ★ Motion</button>
         </div>
         <input type="file" id="fileInputImgNew" accept="image/*">
       </div>
@@ -464,7 +505,7 @@
             <button class="btn" id="expAllPng"><span class="fmt">PNG</span><span class="sub">every slide</span></button>
             <button class="btn" id="expAllJpg"><span class="fmt">JPEG</span><span class="sub">every slide, smaller</span></button>
           </div>
-          <p class="ea-note">On a phone you can save them all to Photos in one go; on a computer they download as one ZIP.</p>
+          <p class="ea-note">Slides that move (video or animation) are saved as GIFs automatically, the rest in the format you pick. On a phone you can save them all to Photos in one go; on a computer they download as one ZIP.</p>
         </div>
         <div id="progWrap"><div id="progBar"></div></div>
         <div id="exportStatus"></div>
@@ -2739,7 +2780,9 @@ function renderScene(tctx, tW, tH, opts={}){
   if(opts.bgSelectionIdx!==undefined && opts.bgSelectionIdx!==null) drawBgSelectionTo(tctx, tW, tH, opts.bgSelectionIdx);
 }
 
+let slideRenderLock = false;   // true while another slide is swapped in for export
 function draw(panT){
+  if(slideRenderLock) return;
   fitTextBoxes();
   renderScene(ctx, W, H, { panT, showSelection: selectedId && !selectedId.startsWith('__bg_'), bgSelectionIdx: (selectedId && selectedId.startsWith('__bg_')) ? parseInt(selectedId.slice(5)) : null });
   if(activeGuides.length){
@@ -2761,6 +2804,7 @@ function draw(panT){
   }
   refreshActiveThumbnail();
   if(typeof queueSlideThumb==='function') queueSlideThumb();
+  if(typeof queueRulers==='function') queueRulers();
   scheduleCommit();
   if(!motionRunning && hasMotion()) motionLoop();
 }
@@ -2773,6 +2817,10 @@ function drawElementTo(tctx, tW, tH, el){
   if(rot){
     const cx=x+w/2, cy=y+h/2;
     tctx.translate(cx,cy); tctx.rotate(rot); tctx.translate(-cx,-cy);
+  }
+  if(el.flipX || el.flipY){   // mirror inside the element's own box
+    const cx=x+w/2, cy=y+h/2;
+    tctx.translate(cx,cy); tctx.scale(el.flipX?-1:1, el.flipY?-1:1); tctx.translate(-cx,-cy);
   }
   if(el.motion){
     const cx=x+w/2, cy=y+h/2;
@@ -3094,6 +3142,24 @@ function applySnapping(el){
   if(Math.abs((b.x+b.w) - W) < SNAP_THRESHOLD){ el.x = (W-b.w)/W; guides.push({type:'v', pos:W}); }
   if(Math.abs(b.y) < SNAP_THRESHOLD){ el.y = 0; guides.push({type:'h', pos:0}); }
   if(Math.abs((b.y+b.h) - H) < SNAP_THRESHOLD){ el.y = (H-b.h)/H; guides.push({type:'h', pos:H}); }
+  // your own guide lines: an element's edge or middle sticks to them while moving
+  if(rulersOn && userGuides.length && drag && drag.mode==='move'){
+    b = elBounds(el);
+    let doneV = false, doneH = false;
+    userGuides.forEach(g=>{
+      if(g.t==='v' && !doneV){
+        const gx = g.f*W;
+        for(const [edge, off] of [[b.x, 0], [b.x + b.w/2, b.w/2], [b.x + b.w, b.w]]){
+          if(Math.abs(edge - gx) < SNAP_THRESHOLD){ el.x = (gx - off)/W; guides.push({type:'v', pos:gx}); doneV = true; break; }
+        }
+      } else if(g.t==='h' && !doneH){
+        const gy = g.f*H;
+        for(const [edge, off] of [[b.y, 0], [b.y + b.h/2, b.h/2], [b.y + b.h, b.h]]){
+          if(Math.abs(edge - gy) < SNAP_THRESHOLD){ el.y = (gy - off)/H; guides.push({type:'h', pos:gy}); doneH = true; break; }
+        }
+      }
+    });
+  }
   return guides;
 }
 let repositionId = null; // element id (or '__bg_N' for a background grid cell) currently in photo-reposition mode
@@ -3377,6 +3443,48 @@ window.addEventListener('keydown',(e)=>{
 });
 
 // =========================== PROPERTIES PANEL ============================
+// every slider in the Edit panel gets a number box next to it (type a value or read it off)
+const SLIDER_NUM = {
+  p_op:      { to:v=>v*100,       from:n=>n/100,       unit:'%' },
+  p_bgop:    { to:v=>(1-v)*100,   from:n=>1-n/100,     unit:'%' },
+  p_bgrad:   { to:v=>v*100,       from:n=>n/100,       unit:'%' },
+  p_rotation:{ to:v=>v,           from:n=>n,           unit:'°' },
+  p_zoom:    { to:v=>v*100,       from:n=>n/100,       unit:'%' },
+  p_bg_zoom: { to:v=>v*100,       from:n=>n/100,       unit:'%' },
+  p_r:       { to:v=>v*1000,      from:n=>n/1000,      unit:'' },
+};
+function addSliderNumbers(root){
+  root.querySelectorAll('input[type=range]').forEach(r => {
+    const m = SLIDER_NUM[r.id]; if(!m || r.dataset.num) return;
+    r.dataset.num = '1';
+    const lo = Math.round(Math.min(m.to(+r.min), m.to(+r.max))), hi = Math.round(Math.max(m.to(+r.min), m.to(+r.max)));
+    const wrap = document.createElement('div'); wrap.className = 'slidenum';
+    r.parentNode.insertBefore(wrap, r); wrap.appendChild(r);
+    const box = document.createElement('span'); box.className = 'sn-box';
+    box.innerHTML = `<input type="number" min="${lo}" max="${hi}" step="1" aria-label="value">${m.unit ? `<i>${m.unit}</i>` : ''}`;
+    wrap.appendChild(box);
+    const n = box.querySelector('input');
+    const show = () => { n.value = Math.round(m.to(+r.value)); };
+    show();
+    r.addEventListener('input', show);
+    const apply = () => {
+      if(n.value==='') return;
+      const v = Math.max(lo, Math.min(hi, +n.value));
+      r.value = m.from(v);
+      r.dispatchEvent(new Event('input', { bubbles:true }));
+      r.dispatchEvent(new Event('change', { bubbles:true }));
+    };
+    n.addEventListener('input', apply);
+    n.addEventListener('change', () => { apply(); show(); });
+  });
+}
+function flipElement(el, axis){
+  if(!el) return;
+  const k = axis==='x' ? 'flipX' : 'flipY';
+  if(el[k]) delete el[k]; else el[k] = true;
+  draw(); renderProps();
+  setStatus(axis==='x' ? 'Flipped left ↔ right.' : 'Flipped top ↕ bottom.');
+}
 function renderProps(){
   canvas.style.cursor = repositionId ? 'grab' : 'default';
   const body = document.getElementById('propsBody');
@@ -3411,6 +3519,7 @@ function renderProps(){
     if(zm) zm.addEventListener('input', e=>{ cell.zoom = parseFloat(e.target.value); draw(); });
     const rs = document.getElementById('p_bg_reset');
     if(rs) rs.onclick = ()=>{ cell.focalX=.5; cell.focalY=.5; cell.zoom=1; draw(); renderProps(); };
+    addSliderNumbers(body);
     return;
   }
 
@@ -3419,19 +3528,17 @@ function renderProps(){
   let html = `<label class="field">Type</label><div style="font-family:var(--mono);font-size:11px;color:var(--gold);margin-bottom:10px;text-transform:uppercase;">${el.type}${el.label?' · '+el.label:''}</div>`;
 
   if(el.type==='text'||el.type==='emoji'){
-    html += `<label class="field">Content</label><textarea class="propbox" id="p_text">${(el.type==='emoji'?el.emoji:el.text)||''}</textarea>`;
+    html += `<label class="field">Content</label><textarea class="propbox" id="p_text" rows="10">${(el.type==='emoji'?el.emoji:el.text)||''}</textarea>`;
     if(el.type==='text'){
       const curFont = el.fontFamily || 'Inter, sans-serif';
       html += `<label class="field">Font</label>${fontPickerHTML(curFont)}`;
     }
-    html += `<div class="row"><div><label class="field">Size</label><input type="range" id="p_size" min="0.01" max="0.12" step="0.002" value="${el.fontSize||.02}"></div></div>`;
+    { const fsNow = el.fontSize||.02, px = Math.round(fsNow*H);
+      html += `<div class="row" style="align-items:flex-end;"><div><label class="field" title="Pixels on the ${W}×${H} export">Size <span style="opacity:.7">(px)</span></label><input type="range" id="p_size" min="0.008" max="${Math.max(.12, fsNow).toFixed(3)}" step="0.001" value="${fsNow}"></div>
+        <div style="flex:0 0 78px;"><input type="number" id="p_sizepx" min="6" max="1000" step="1" value="${px}" title="Font size in pixels" style="width:100%;text-align:center;"></div></div>`; }
     if(el.type==='text'){
       html += `<div class="row"><div><label class="field">Color</label><input type="color" id="p_color" value="${toHex(el.color)}"></div>
-        <div><label class="field">Align</label><select id="p_align" style="width:100%;background:#0e0d0a;color:#fff;border:1px solid var(--panel-line);border-radius:5px;padding:7px;">
-          <option value="left" ${el.align==='left'?'selected':''}>left</option>
-          <option value="center" ${el.align==='center'?'selected':''}>center</option>
-          <option value="right" ${el.align==='right'?'selected':''}>right</option>
-        </select></div></div>`;
+        <div><label class="field">Align</label><div class="align-icons" id="p_align">${[['left','Align left','M1 2h14M1 6h9M1 10h14M1 14h9'],['center','Align centre','M1 2h14M3.5 6h9M1 10h14M3.5 14h9'],['right','Align right','M1 2h14M6 6h9M1 10h14M6 14h9']].map(([v,t,d]) => `<button type="button" class="btn small ${(el.align||'left')===v?'primary':''}" data-align="${v}" title="${t}" aria-label="${t}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="${d}"/></svg></button>`).join('')}</div></div></div>`;
       html += `<label class="field">Style</label>
         <div class="row" style="gap:6px;">
           <button type="button" id="p_bold" class="btn small ${el.fontWeight>=600?'primary':''}" style="flex:1;font-weight:800;">B</button>
@@ -3447,7 +3554,7 @@ function renderProps(){
           </select>`;
         if(bs){
           html += `<div class="row"><div style="flex:0 0 64px;"><label class="field">Colour</label><input type="color" id="p_bgcolor" value="${toHex(el.bgColor||'#000000')}"></div>
-            <div><label class="field">See-through <span id="p_bgop_v" style="opacity:.7">${Math.round((1-(el.bgOpacity!=null?el.bgOpacity:.6))*100)}%</span></label><input type="range" id="p_bgop" min="0.05" max="1" step="0.05" value="${el.bgOpacity!=null?el.bgOpacity:.6}"></div></div>
+            <div><label class="field">See-through</label><input type="range" id="p_bgop" min="0.05" max="1" step="0.05" value="${el.bgOpacity!=null?el.bgOpacity:.6}"></div></div>
             ${bs!=='pill' ? `<div class="row"><div><label class="field">Round corners</label><input type="range" id="p_bgrad" min="0" max="1" step="0.05" value="${el.bgRadius!=null?el.bgRadius:.3}"></div></div>` : ''}`;
         }
       }
@@ -3504,20 +3611,38 @@ function renderProps(){
   }
   html += `<label class="field" style="margin-top:8px;">Motion</label><select id="p_motion" style="width:100%;background:#0e0d0a;color:#fff;border:1px solid var(--panel-line);border-radius:5px;padding:7px;">
       ${MOTION_TYPES.map(([v,l]) => `<option value="${v}" ${(el.motion||'')===v?'selected':''}>${l}</option>`).join('')}</select>
-    <p style="margin:6px 0 0;font-size:11.5px;color:#8b856f;">Moving elements show in GIF and MP4 exports.</p>`;
+    <p style="margin:6px 0 0;font-size:11.5px;color:#8b856f;">Works on photos, icons, shapes and text. Moving elements show in GIF and MP4 exports.</p>`;
   html += `<div class="row" style="margin-top:8px;"><div><label class="field">Opacity</label><input type="range" id="p_op" min="0.1" max="1" step="0.02" value="${el.opacity!==undefined?el.opacity:1}"></div></div>`;
-  html += `<div class="row" style="margin-top:8px;"><div><label class="field">Rotation <span style="opacity:.6">(or drag the knob above the selection)</span></label><input type="range" id="p_rotation" min="-180" max="180" step="1" value="${el.rotation||0}"></div></div>`;
+  html += `<div class="row" style="margin-top:8px;"><div><label class="field" title="You can also drag the round knob above the selection">Rotation</label><input type="range" id="p_rotation" min="-180" max="180" step="1" value="${el.rotation||0}"></div></div>`;
+  html += `<label class="field" style="margin-top:8px;">Mirror</label>
+    <div class="row" style="gap:6px;">
+      <button type="button" id="p_flipx" class="btn small ${el.flipX?'primary':''}" style="flex:1;justify-content:center;" title="Mirror left ↔ right">↔ Flip horizontal</button>
+      <button type="button" id="p_flipy" class="btn small ${el.flipY?'primary':''}" style="flex:1;justify-content:center;" title="Mirror top ↕ bottom">↕ Flip vertical</button>
+    </div>`;
   html += `<div class="row" style="margin-top:10px;"><button class="btn small" id="p_front">Bring to front</button><button class="btn small" id="p_back">Send to back</button></div>`;
   html += `<div class="row"><button class="btn small" id="p_dup">⧉ Duplicate <span class="hint-key">(⌘/Ctrl+D)</span></button></div>`;
   html += `<button class="btn small" id="p_delete" style="width:100%;justify-content:center;margin-top:8px;border-color:#5a3a2f;color:#e08a70;">Delete element</button>`;
 
   body.innerHTML = html;
+  addSliderNumbers(body);
 
   const bind = (id,evt,fn)=>{ const n=document.getElementById(id); if(n) n.addEventListener(evt, fn); };
+  { const ta = document.getElementById('p_text');
+    if(ta){ const fit = ()=>{ ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }; fit(); ta.addEventListener('input', fit); } }
   bind('p_text','input', e=>{ if(el.type==='emoji') el.emoji=e.target.value; else el.text=e.target.value; draw(); renderLayerList(); });
-  bind('p_size','input', e=>{ el.fontSize=parseFloat(e.target.value); draw(); });
+  bind('p_size','input', e=>{ el.fontSize=parseFloat(e.target.value); const n=document.getElementById('p_sizepx'); if(n) n.value=Math.round(el.fontSize*H); draw(); });
+  bind('p_sizepx','input', e=>{
+    const v = parseFloat(e.target.value); if(!(v>0)) return;
+    el.fontSize = Math.max(6, Math.min(1000, v))/H;
+    const r = document.getElementById('p_size'); if(r){ if(el.fontSize > parseFloat(r.max)) r.max = el.fontSize.toFixed(3); r.value = el.fontSize; }
+    draw();
+  });
+  bind('p_sizepx','change', ()=> renderProps());
   bind('p_color','input', e=>{ el.color=e.target.value; draw(); });
-  bind('p_align','change', e=>{ el.align=e.target.value; draw(); });
+  document.querySelectorAll('#p_align [data-align]').forEach(b => b.onclick = () => {
+    el.align = b.dataset.align; draw();
+    document.querySelectorAll('#p_align [data-align]').forEach(x => x.classList.toggle('primary', x===b));
+  });
   bind('p_bold','click', ()=>{ el.fontWeight = (el.fontWeight>=600) ? 400 : 700; draw(); renderProps(); });
   bind('p_italic','click', ()=>{ el.fontStyle = (el.fontStyle==='italic') ? undefined : 'italic'; draw(); renderProps(); });
   bind('p_strike','click', ()=>{ el.strikethrough = !el.strikethrough; draw(); renderProps(); });
@@ -3528,7 +3653,7 @@ function renderProps(){
     draw(); renderProps();
   });
   bind('p_bgcolor','input', e=>{ el.bgColor = e.target.value; draw(); });
-  bind('p_bgop','input', e=>{ el.bgOpacity = parseFloat(e.target.value); const v=document.getElementById('p_bgop_v'); if(v) v.textContent = Math.round((1-el.bgOpacity)*100)+'%'; draw(); });
+  bind('p_bgop','input', e=>{ el.bgOpacity = parseFloat(e.target.value); draw(); });
   bind('p_bgrad','input', e=>{ el.bgRadius = parseFloat(e.target.value); draw(); });
   bindFontPicker(el);
   bind('p_fill','input', e=>{ el.fill=e.target.value; draw(); });
@@ -3546,6 +3671,8 @@ function renderProps(){
   bind('p_op','input', e=>{ el.opacity=parseFloat(e.target.value); draw(); });
   bind('p_motion','change', e=>{ if(e.target.value) el.motion=e.target.value; else delete el.motion; draw(); });
   bind('p_rotation','input', e=>{ el.rotation=parseFloat(e.target.value); draw(); });
+  bind('p_flipx','click', ()=>flipElement(el,'x'));
+  bind('p_flipy','click', ()=>flipElement(el,'y'));
   bind('p_front','click', ()=>{ el.z = Math.max(...elements.map(x=>x.z))+1; draw(); renderLayerList(); });
   bind('p_back','click', ()=>{ el.z = Math.min(...elements.map(x=>x.z))-1; draw(); renderLayerList(); });
   bind('p_dup','click', ()=> duplicateElement(el));
@@ -3611,16 +3738,21 @@ document.getElementById('addEmoji').onclick = ()=>{
 };
 
 document.getElementById('addStar').onclick = ()=>{
+  // something selected (photo, icon, shape, text) → make it move; nothing selected → add a moving ★
+  const sel = selectedId && !selectedId.startsWith('__bg_') ? elements.find(e=>e.id===selectedId) : null;
+  if(sel){
+    if(!sel.motion) sel.motion = sel.type==='image' ? 'wiggle' : 'jitter';
+    draw(); renderProps();
+    const m = document.getElementById('p_motion');
+    if(m){ m.scrollIntoView({ block:'center', behavior:'smooth' }); m.classList.add('flash'); setTimeout(()=>m.classList.remove('flash'), 1200); }
+    setStatus('Motion added — pick another style in the Motion menu. Export as GIF or MP4 to keep the movement.');
+    return;
+  }
   const el = mk('text',{x:.42,y:.42,w:.12,h:.12,text:'★',fontFamily:'Inter, sans-serif',fontSize:.08,color:'#ffffff',align:'center',motion:'jitter',label:'moving star',z:Math.max(0,...elements.map(e=>e.z))+1});
   elements.push(el); selectedId=el.id; draw(); renderLayerList(); renderProps();
-  setStatus('Moving star added. Export as GIF or MP4 to keep the movement.');
+  setStatus('Moving ★ added. Tip: select a photo or icon first and press Motion to make it move instead.');
 };
 
-document.getElementById('addBeads').onclick = ()=>{
-  const el = mk('text',{x:.1,y:.42,w:.8,h:.09,text:'HOW I PLAN',fontFamily:'beads',fontSize:.045,color:'#1d1d1f',align:'center',label:'bead letters',z:Math.max(0,...elements.map(e=>e.z))+1});
-  elements.push(el); selectedId=el.id; draw(); renderLayerList(); renderProps();
-  setStatus('Bead letters added. Type your words in Content; pick "Letter beads" in Font for any text.');
-};
 
 // =========================== MY STICKERS ==================================
 // Cutouts made with cutout.js, kept in the person's account through planner.js (window.plStickers).
@@ -3876,6 +4008,7 @@ function showCtxMenu(e){
   const items = [
     ['copy', 'Copy', K+'C', !el], ['paste', 'Paste', K+'V', !clipboardEl], ['duplicate', 'Duplicate', K+'D', !el], ['delete', 'Delete', '⌫', !el],
     'sep', ['front', 'Bring to front', '', !el], ['back', 'Send to back', '', !el],
+    'sep', ['flipx', '↔ Flip horizontal', '', !el], ['flipy', '↕ Flip vertical', '', !el],
     ...(el && el.type==='image' && !el.sticker && el.el instanceof HTMLImageElement ? ['sep', ['cutout', '✂ Make a sticker from this photo', '', false]] : []),
     'sep', ['undo', 'Undo', K+'Z', h.idx <= 0], ['redo', 'Redo', mac ? '⇧⌘Z' : 'Ctrl+Y', h.idx >= h.stack.length - 1],
   ];
@@ -3889,7 +4022,7 @@ function showCtxMenu(e){
     const b = ev.target.closest('button[data-act]'); if(!b || b.disabled) return;
     const cur = elements.find(x=>x.id===selectedId);
     ({ copy:()=>{ clipboardEl = cloneElementData(cur); setStatus('Element copied.'); }, paste:pasteElement, duplicate:()=>duplicateElement(cur),
-       delete:deleteSelected, front:()=>toFront(cur), back:()=>toBack(cur), undo, redo, cutout:()=>makeStickerFrom(cur && cur.el) })[b.dataset.act]();
+       delete:deleteSelected, front:()=>toFront(cur), back:()=>toBack(cur), flipx:()=>flipElement(cur,'x'), flipy:()=>flipElement(cur,'y'), undo, redo, cutout:()=>makeStickerFrom(cur && cur.el) })[b.dataset.act]();
     hideCtxMenu();
   };
 }
@@ -3969,6 +4102,7 @@ function fitStage(){
   canvas.style.height = h+'px';
   stage.style.width = w+'px';
   stage.style.height = h+'px';
+  if(typeof queueRulers==='function') queueRulers();
 }
 window.addEventListener('resize', fitStage);
 // Also re-fit whenever the stage area itself changes size (mobile tab switches,
@@ -4245,6 +4379,8 @@ function renderSlideBar(){
     <button type="button" class="btn small sb-btn" id="sbDup" title="Copy this slide (same layout and text) as the next slide">⧉ Duplicate</button>
     <span class="sb-sep"></span>`;
   for(let i=0;i<n;i++) html += `<button type="button" class="sb-thumb ${i===idx?'on':''}" data-i="${i}" title="Slide ${i+1}"><canvas width="${tw*2}" height="${SLIDE_TH*2}" style="width:${tw}px;height:${SLIDE_TH}px"></canvas><b>${i+1}</b></button>`;
+  html += `<span class="sb-sep"></span><button type="button" class="btn small sb-btn ${rulersOn?'primary':''}" id="sbRulers" title="Show pixel rulers; drag from a ruler to add a guide line">📏 Rulers</button>`;
+  if(rulersOn && userGuides.length) html += `<button type="button" class="btn small sb-btn" id="sbClearGuides" title="Remove all guide lines">Clear guides</button>`;
   if(n>1) html += `<span class="sb-sep"></span><button type="button" class="btn small sb-btn" id="sbLeft" title="Move this slide earlier" ${idx===0?'disabled':''}>◀</button>
     <button type="button" class="btn small sb-btn" id="sbRight" title="Move this slide later" ${idx===n-1?'disabled':''}>▶</button>
     <button type="button" class="btn small sb-btn" id="sbDel" title="Delete this slide" style="border-color:#5a3a2f;color:#e08a70;">🗑</button>`;
@@ -4256,6 +4392,8 @@ function renderSlideBar(){
   if(L) L.onclick = () => moveSlide(-1);
   if(R) R.onclick = () => moveSlide(1);
   if(X) X.onclick = deleteSlide;
+  document.getElementById('sbRulers').onclick = () => setRulers(!rulersOn);
+  const CG = document.getElementById('sbClearGuides'); if(CG) CG.onclick = () => { userGuides = []; renderGuides(); renderSlideBar(); setStatus('Guides cleared.'); };
   const thumbs = bar.querySelectorAll('.sb-thumb canvas');
   thumbs.forEach((cv, i) => {
     const c = cv.getContext('2d');
@@ -4293,34 +4431,257 @@ function makeZip(files){   // files: [{name, data:Uint8Array}] — stored, no co
   const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cSize), ...u32(off), ...u16(0)]);
   return new Blob([...parts, ...central, end], { type:'application/zip' });
 }
+// ---- moving slides (video or animated elements) are saved as GIFs, still ones as PNG/JPEG
+function slideIsAnimated(slide){
+  const se = elements, sb = bg;
+  elements = slide.elements; bg = slide.bg;
+  try{ return allVideos().length > 0 || hasMotion(); }
+  finally{ elements = se; bg = sb; }
+}
+let gifWorkerUrl = null;
+async function getGifWorker(){
+  if(!gifWorkerUrl){
+    const blob = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js').then(r=>r.blob());
+    gifWorkerUrl = URL.createObjectURL(blob);
+  }
+  return gifWorkerUrl;
+}
+// renders one slide as a looping GIF blob; onProg(0..1)
+async function renderSlideGif(slide, onProg){
+  onProg = onProg || (()=>{});
+  const gif = new GIF({ workers:3, quality:8, workerScript: await getGifWorker(), width:W, height:H, repeat:0 });
+  const off = document.createElement('canvas'); off.width = W; off.height = H;
+  const oc = off.getContext('2d');
+  const fps = 12;
+  const se = elements, sb = bg, ss = selectedId;
+  const live = allVideos();
+  const wasPlaying = live.map(v => !v.paused);
+  slideRenderLock = true;
+  elements = slide.elements; bg = slide.bg; selectedId = null;
+  let vids = [];
+  try{
+    vids = allVideos();
+    live.concat(vids).forEach(v => v.pause());
+    const frame = () => { fitTextBoxes(); renderScene(oc, W, H, {}); gif.addFrame(oc, { copy:true, delay: 1000/fps }); };
+    if(vids.length){
+      const dur = Math.min(GIF_MAX_SECONDS, Math.max(...vids.map(v=>vidDur(v,3))));
+      const n = Math.max(1, Math.round(dur*fps));
+      for(let i=0;i<n;i++){
+        motionT = i/fps;
+        await Promise.all(vids.map(v => new Promise(res => {
+          const t = ((i/n)*dur) % vidDur(v,dur);
+          let done = false; const fin = () => { if(done) return; done = true; v.removeEventListener('seeked', fin); res(); };
+          v.addEventListener('seeked', fin); setTimeout(fin, 1500);
+          v.currentTime = t;
+        })));
+        frame(); onProg(i/n * .5);
+      }
+    } else {
+      const n = Math.round(MOTION.cycle*fps);
+      for(let i=0;i<n;i++){ motionT = i/fps; frame(); onProg(i/n * .5); }
+    }
+  } finally {
+    motionT = null;
+    elements = se; bg = sb; selectedId = ss;
+    slideRenderLock = false;
+  }
+  live.forEach((v,i) => { if(wasPlaying[i]) v.play().catch(()=>{}); });
+  if(live.length) videoLoop();
+  return await new Promise((res, rej) => {
+    gif.on('progress', p => onProg(.5 + p*.5));
+    gif.on('finished', blob => res(blob));
+    gif.on('abort', () => rej(new Error('GIF aborted')));
+    gif.render();
+  });
+}
+// every slide as a file, in order: [{name, mime, blob}]; moving slides become GIFs
+async function slideFiles(kind, base, onProg){
+  const d = deck(); syncDeck();
+  const list = d ? d.list : [{ elements, bg }];
+  const mime = kind==='jpg' ? 'image/jpeg' : 'image/png', ext = kind==='jpg' ? 'jpg' : 'png';
+  const off = document.createElement('canvas'); off.width = W; off.height = H;
+  const oc = off.getContext('2d');
+  const out = [];
+  for(let i=0;i<list.length;i++){
+    const num = String(i+1).padStart(2,'0');
+    const report = f => onProg && onProg((i + f) / list.length, i);
+    report(0);
+    if(slideIsAnimated(list[i])){
+      const blob = await renderSlideGif(list[i], report);
+      out.push({ name:`${base}-${num}.gif`, mime:'image/gif', blob });
+    } else {
+      oc.clearRect(0, 0, W, H);
+      renderSlideTo(list[i], oc, W, H);
+      const blob = await new Promise((res, rej) => off.toBlob(b => b ? res(b) : rej(new Error('Slide could not be saved')), mime, 0.94));
+      out.push({ name:`${base}-${num}.${ext}`, mime, blob });
+    }
+  }
+  draw();
+  return out;
+}
 function exportAllSlides(kind){
   const d = deck(); if(!d || d.list.length < 2) return;
-  runExportAd(()=>{
-    syncDeck();
-    const mime = kind==='jpg' ? 'image/jpeg' : 'image/png', ext = kind==='jpg' ? 'jpg' : 'png';
-    const off = document.createElement('canvas'); off.width = W; off.height = H;
-    const oc = off.getContext('2d');
-    const files = d.list.map((sl, i) => {
-      oc.clearRect(0, 0, W, H);
-      renderSlideTo(sl, oc, W, H);
-      const name = `inspocult-slide-${String(i+1).padStart(2,'0')}.${ext}`;
-      return { name, data: dataUrlBytes(off.toDataURL(mime, 0.94)) };
-    });
-    draw();
-    const asFiles = files.map(f => new File([f.data], f.name, { type:mime }));
-    const phone = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-    if(phone && navigator.canShare && navigator.canShare({ files: asFiles })){
-      navigator.share({ files: asFiles, title:'inspocult carousel' })
-        .then(()=> setStatus(`${files.length} slides ready — pick “Save Images” to put them in Photos.`))
-        .catch(err => { if(err && err.name==='AbortError') setStatus('Cancelled.'); else { download(URL.createObjectURL(makeZip(files)), 'inspocult-carousel.zip'); setStatus(`${files.length} slides saved as a ZIP.`); } });
-      return;
+  runExportAd(async ()=>{
+    const btns = ['expAllPng','expAllJpg'].map(id => document.getElementById(id));
+    btns.forEach(b => b.disabled = true); setExportingUI(true);
+    try{
+      const n = d.list.length, moving = d.list.filter(slideIsAnimated).length;
+      setStatus(moving ? `Saving ${n} slides — ${moving} moving one${moving>1?'s':''} as GIF…` : `Saving ${n} slides…`);
+      setProgress(1);
+      const raw = await slideFiles(kind, 'inspocult-slide', (f, i) => { setProgress(Math.max(1, Math.min(99, f*100))); if(moving) setStatus(`Saving slide ${i+1} of ${n}…`); });
+      setProgress(0);
+      const files = await Promise.all(raw.map(async f => ({ name:f.name, mime:f.mime, data:new Uint8Array(await f.blob.arrayBuffer()) })));
+      const gifs = files.filter(f => f.mime==='image/gif').length;
+      const mix = gifs ? ` (${gifs} as GIF, ${files.length-gifs} as ${kind==='jpg'?'JPEG':'PNG'})` : '';
+      const asFiles = files.map(f => new File([f.data], f.name, { type:f.mime }));
+      const phone = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+      if(phone && navigator.canShare && navigator.canShare({ files: asFiles })){
+        try{
+          await navigator.share({ files: asFiles, title:'inspocult carousel' });
+          setStatus(`${files.length} slides ready${mix} — pick “Save Images” to put them in Photos.`);
+        }catch(err){
+          if(err && err.name==='AbortError') setStatus('Cancelled.');
+          else { download(URL.createObjectURL(makeZip(files)), 'inspocult-carousel.zip'); setStatus(`${files.length} slides saved as a ZIP${mix}.`); }
+        }
+        return;
+      }
+      download(URL.createObjectURL(makeZip(files)), 'inspocult-carousel.zip');
+      setStatus(`${files.length} slides saved in one ZIP${mix}, in order.`);
+    }catch(err){
+      console.error(err); setProgress(0);
+      setStatus('Saving the slides failed — please try again.');
+    }finally{
+      slideRenderLock = false;
+      btns.forEach(b => b.disabled = false); setExportingUI(false);
     }
-    download(URL.createObjectURL(makeZip(files)), 'inspocult-carousel.zip');
-    setStatus(`${files.length} slides saved in one ZIP (inspocult-slide-01, -02…), in order.`);
   });
 }
 document.getElementById('expAllPng').onclick = () => exportAllSlides('png');
 document.getElementById('expAllJpg').onclick = () => exportAllSlides('jpg');
+
+// =========================== RULERS & GUIDES ==============================
+// Rulers show pixels of the exported image (e.g. 0–1080 across a 4:5 post).
+// Drag from a ruler onto the canvas to add a guide line; drag a guide back onto
+// a ruler (or off the canvas) to remove it. Guides are screen-only: they're
+// drawn as page elements over the canvas, so they never appear in exports.
+let rulersOn = prefGet('inspocult-rulers', false);
+let userGuides = prefGet('inspocult-guides', []);       // [{t:'v'|'h', f:0..1}]
+let rulerMouse = null;                                    // {x,y} in export px, for the marker
+let guideSeq = 1;
+userGuides.forEach(g => g.id = 'g' + (guideSeq++));
+const saveGuides = () => prefSet('inspocult-guides', userGuides.map(({t,f}) => ({t, f:+f.toFixed(5)})));
+function setRulers(on){
+  rulersOn = !!on; prefSet('inspocult-rulers', rulersOn);
+  ['rulerTop','rulerLeft','rulerCorner'].forEach(id => document.getElementById(id).hidden = !rulersOn);
+  document.getElementById('stage-wrap').classList.toggle('rulers-on', rulersOn);
+  renderGuides(); renderSlideBar(); fitStage(); drawRulers();
+  if(on) setStatus('Rulers on. Drag from the top or left ruler onto the canvas to add a guide line — things snap to it.');
+}
+function niceStep(pxPerUnit){
+  for(const s of [5,10,20,25,50,100,200,250,500,1000]) if(s*pxPerUnit >= 46) return s;
+  return 2000;
+}
+function drawRuler(cv, horizontal){
+  const len = horizontal ? cv.clientWidth : cv.clientHeight, thick = horizontal ? cv.clientHeight : cv.clientWidth;
+  if(!len || !thick) return;
+  const dpr = window.devicePixelRatio || 1;
+  const wpx = Math.round((horizontal ? len : thick)*dpr), hpx = Math.round((horizontal ? thick : len)*dpr);
+  if(cv.width !== wpx) cv.width = wpx;
+  if(cv.height !== hpx) cv.height = hpx;
+  const c = cv.getContext('2d');
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,horizontal?len:thick, horizontal?thick:len);
+  const units = horizontal ? W : H, k = len/units, step = niceStep(k);
+  // the selected element's span, so you can read where it starts and ends
+  const el = selectedId && !selectedId.startsWith('__bg_') ? elements.find(e=>e.id===selectedId) : null;
+  if(el){
+    const a = (horizontal ? el.x*W : el.y*H)*k, b = ((horizontal ? (el.x+el.w)*W : (el.y+el.h)*H))*k;
+    c.fillStyle = 'rgba(245,227,163,.22)';
+    if(horizontal) c.fillRect(a, 0, b-a, thick); else c.fillRect(0, a, thick, b-a);
+  }
+  c.strokeStyle = '#4a4430'; c.fillStyle = '#8b856f'; c.lineWidth = 1;
+  c.font = `500 ${Math.max(7, Math.min(9, thick*.45))}px 'IBM Plex Mono', monospace`;
+  c.textBaseline = 'top';
+  c.beginPath();
+  const minor = step/5;
+  for(let u=0; u<=units+1e-6; u+=minor){
+    const p = Math.round(u*k) + .5, major = Math.abs(u/step - Math.round(u/step)) < 1e-6;
+    const tick = major ? thick*.55 : thick*.22;
+    if(horizontal){ c.moveTo(p, thick); c.lineTo(p, thick - tick); }
+    else { c.moveTo(thick, p); c.lineTo(thick - tick, p); }
+    if(major && u < units - step*0.3){
+      if(horizontal) c.fillText(String(Math.round(u)), p + 2, 2);
+      else { c.save(); c.translate(2, p + 2); c.rotate(Math.PI/2); c.fillText(String(Math.round(u)), 0, -thick + 4); c.restore(); }
+    }
+  }
+  c.stroke();
+  // where the pointer is
+  if(rulerMouse){
+    const m = (horizontal ? rulerMouse.x : rulerMouse.y)*k;
+    c.strokeStyle = '#ff4d6d'; c.beginPath();
+    if(horizontal){ c.moveTo(m+.5, 0); c.lineTo(m+.5, thick); } else { c.moveTo(0, m+.5); c.lineTo(thick, m+.5); }
+    c.stroke();
+  }
+}
+function drawRulers(){
+  if(!rulersOn) return;
+  drawRuler(document.getElementById('rulerTop'), true);
+  drawRuler(document.getElementById('rulerLeft'), false);
+}
+let rulersQueued = false;
+function queueRulers(){
+  if(!rulersOn || rulersQueued) return; rulersQueued = true;
+  requestAnimationFrame(()=>{ rulersQueued = false; drawRulers(); });
+}
+function renderGuides(){
+  const layer = document.getElementById('guideLayer'); if(!layer) return;
+  layer.innerHTML = '';
+  if(!rulersOn) return;
+  userGuides.forEach(g=>{
+    const d = document.createElement('div');
+    d.className = 'gline ' + g.t; d.dataset.id = g.id;
+    if(g.t==='v') d.style.left = (g.f*100) + '%'; else d.style.top = (g.f*100) + '%';
+    d.innerHTML = `<span class="gtag">${Math.round(g.f*(g.t==='v'?W:H))} px</span>`;
+    d.title = 'Drag to move · drag back onto the ruler to remove · double-click to remove';
+    d.addEventListener('pointerdown', e => startGuideDrag(e, g));
+    d.addEventListener('dblclick', () => { userGuides = userGuides.filter(x=>x!==g); saveGuides(); renderGuides(); renderSlideBar(); });
+    layer.appendChild(d);
+  });
+}
+function startGuideDrag(e, g){
+  e.preventDefault(); e.stopPropagation();
+  const isNew = !g;
+  if(isNew){ g = { id:'g'+(guideSeq++), t: e.currentTarget.id==='rulerTop' ? 'h' : 'v', f:-1 }; userGuides.push(g); }
+  const move = ev => {
+    const r = canvas.getBoundingClientRect();
+    const f = g.t==='v' ? (ev.clientX - r.left)/r.width : (ev.clientY - r.top)/r.height;
+    // snap the guide to the middle and edges of the frame
+    const units = g.t==='v' ? W : H, px = f*units;
+    let snapped = f;
+    for(const t of [0, .5, 1]) if(Math.abs(px - t*units) < SNAP_THRESHOLD) snapped = t;
+    g.f = snapped; g.out = f < -0.01 || f > 1.01;
+    renderGuides();
+    const dl = document.querySelector(`.gline[data-id="${g.id}"]`); if(dl){ dl.classList.add('drag'); if(g.out) dl.style.opacity = .35; }
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+    if(g.out || g.f < 0 || g.f > 1) userGuides = userGuides.filter(x=>x!==g);
+    delete g.out; saveGuides(); renderGuides(); renderSlideBar();
+  };
+  window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  move(e);
+}
+document.getElementById('rulerTop').addEventListener('pointerdown', e => startGuideDrag(e, null));
+document.getElementById('rulerLeft').addEventListener('pointerdown', e => startGuideDrag(e, null));
+canvas.addEventListener('pointermove', e => {
+  if(!rulersOn) return;
+  const r = canvas.getBoundingClientRect();
+  rulerMouse = { x:(e.clientX - r.left)/r.width*W, y:(e.clientY - r.top)/r.height*H };
+  queueRulers();
+});
+canvas.addEventListener('pointerleave', () => { rulerMouse = null; queueRulers(); });
+document.getElementById('aspect').addEventListener('change', () => { renderGuides(); queueRulers(); });
+if(window.ResizeObserver) new ResizeObserver(() => queueRulers()).observe(stage);
 
 // =========================== INIT =========================================
 document.querySelectorAll('#bgLayoutButtons button').forEach(btn=>{
@@ -4341,6 +4702,7 @@ renderTplList();
 loadTemplate('blank');
 commitHistory();
 renderSlideBar();
+if(rulersOn) setRulers(true);
 refreshBgLayoutButtons();
 fitStage();
 initPaywall();
