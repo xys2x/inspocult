@@ -120,6 +120,24 @@
     display:flex; align-items:center; justify-content:center; padding:30px 30px 70px;
   }
   #stage{ position:relative; box-shadow:0 30px 60px -20px rgba(0,0,0,.45); }
+  /* carousel slides strip */
+  #stage-wrap.has-slidebar{ padding-top:96px; }
+  #slideBar{ position:absolute; top:10px; left:12px; right:12px; display:flex; align-items:center; gap:8px; overflow-x:auto; padding:4px 2px 6px; z-index:4; scrollbar-width:thin; }
+  #slideBar::-webkit-scrollbar{ height:5px; }
+  #slideBar::-webkit-scrollbar-track{ background:transparent; }
+  #slideBar::-webkit-scrollbar-thumb{ background:#3a3527; border-radius:3px; }
+  #slideBar{ scrollbar-color:#3a3527 transparent; }
+  #slideBar .sb-label{ font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:#8b856f; flex:none; margin-right:2px; }
+  #slideBar .sb-thumb{ position:relative; flex:none; padding:0; border:2px solid #3a3527; border-radius:5px; background:#0e0d0a; cursor:pointer; line-height:0; }
+  #slideBar .sb-thumb canvas{ display:block; border-radius:3px; }
+  #slideBar .sb-thumb.on{ border-color:var(--gold); box-shadow:0 0 0 3px rgba(245,227,163,.18); }
+  #slideBar .sb-thumb b{ position:absolute; left:3px; top:3px; min-width:15px; height:15px; padding:0 3px; border-radius:8px; background:rgba(0,0,0,.72); color:#fff; font:600 9px/15px var(--mono); text-align:center; }
+  #slideBar .sb-btn{ flex:none; padding:7px 10px; font-size:11px; }
+  #slideBar .sb-sep{ width:1px; height:34px; background:var(--panel-line); flex:none; margin:0 2px; }
+  .exportall{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--panel-line); }
+  .exportall[hidden]{ display:none; }
+  .ea-label{ font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold-dim); margin-bottom:8px; }
+  .ea-note{ margin:8px 0 0; font-size:11px; line-height:1.5; color:#8b856f; }
   #stage canvas{ display:block; background:#000; border-radius:2px; }
   #editOverlayLayer{ position:absolute; inset:0; pointer-events:none; }
   .edit-box{ position:absolute; border:1.5px dashed rgba(201,162,39,.9); pointer-events:none; }
@@ -147,6 +165,20 @@
     border-radius:5px; padding:7px 8px; font-family:var(--body); font-size:12.5px;
   }
   textarea.propbox{ min-height:52px; resize:vertical; }
+  /* font picker: each name written in its own font */
+  .fontpick{ position:relative; margin-bottom:8px; }
+  .fp-btn, .fp-opt{ width:100%; display:flex; align-items:baseline; gap:8px; background:#0e0d0a; color:#fff; border:1px solid var(--panel-line); border-radius:5px; padding:8px 10px; cursor:pointer; text-align:left; }
+  .fp-btn:hover{ border-color:var(--gold); }
+  .fp-name{ font-size:18px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 1 auto; }
+  .fp-desc{ font-family:var(--mono); font-size:9.5px; color:#8b856f; letter-spacing:.04em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1 1 auto; }
+  .fp-car{ color:#8b856f; font-size:11px; margin-left:auto; }
+  .fp-list{ position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:30; max-height:340px; overflow-y:auto; background:#0e0d0a; border:1px solid var(--gold); border-radius:6px; padding:4px; box-shadow:0 18px 40px rgba(0,0,0,.6); }
+  .fp-list[hidden]{ display:none; }
+  .fp-opt{ border-color:transparent; border-radius:4px; padding:9px 10px; }
+  .fp-opt:hover, .fp-opt:focus-visible{ background:#211c0f; border-color:#4a4322; }
+  .fp-opt.on{ background:#2a2617; border-color:var(--gold); }
+  .fp-beads{ display:inline-flex; gap:2px; }
+  .fp-beads i{ font-style:normal; font-size:10px; width:17px; height:17px; border-radius:50%; background:#f4f2ec; color:#1d1d1f; display:inline-grid; place-items:center; }
   input[type=color]{ width:100%; height:32px; border:1px solid var(--panel-line); border-radius:5px; background:none; padding:2px; }
   input[type=range]{ width:100%; accent-color:var(--gold); }
   .swatchbar{ display:flex; gap:6px; }
@@ -270,6 +302,9 @@
   #main.show-right #right{ display:block; }
 
   #stage-wrap{ padding:16px 16px 60px; }
+  #stage-wrap.has-slidebar{ padding-top:84px; }
+  #slideBar{ top:8px; left:8px; right:8px; }
+  #slideBar .sb-btn{ padding:9px 10px; }
   #stageCaption{ display:none; } /* the long hint text doesn't fit small screens; the tap targets are still there */
 
   /* Bigger touch targets throughout the properties panel */
@@ -339,7 +374,8 @@
     </div>
 
     <!-- CENTER: stage -->
-    <div id="stage-wrap">
+    <div id="stage-wrap" class="has-slidebar">
+      <div id="slideBar" aria-label="Carousel slides"></div>
       <div id="stage">
         <canvas id="canvas" width="1080" height="1350"></canvas>
         <div id="editOverlayLayer"></div>
@@ -422,6 +458,14 @@
           <button class="btn" id="expGif"><span class="fmt">GIF</span><span class="sub">looping animation</span></button>
           <button class="btn" id="expMp4"><span class="fmt">MP4</span><span class="sub">video export</span></button>
         </div>
+        <div id="exportAll" class="exportall" hidden>
+          <div class="ea-label">All <span id="eaCount">0</span> slides at once</div>
+          <div class="exportgrid">
+            <button class="btn" id="expAllPng"><span class="fmt">PNG</span><span class="sub">every slide</span></button>
+            <button class="btn" id="expAllJpg"><span class="fmt">JPEG</span><span class="sub">every slide, smaller</span></button>
+          </div>
+          <p class="ea-note">On a phone you can save them all to Photos in one go; on a computer they download as one ZIP.</p>
+        </div>
         <div id="progWrap"><div id="progBar"></div></div>
         <div id="exportStatus"></div>
       </div>
@@ -494,6 +538,40 @@ const FONTS = [
   { value:'Press Start 2P, monospace', label:'Press Start 2P (pixel / 8-bit)' },
   { value:'VT323, monospace', label:'VT323 (pixel / retro terminal)' },
 ];
+// Font picker: a list where every font name is written in that font, so you can
+// see what it looks like before choosing. Hovering a font previews it on the canvas.
+function fontParts(f){ const m = f.label.match(/^(.*?)\s*\((.*)\)$/); return m ? { name:m[1].replace(/^●\s*/,''), desc:m[2] } : { name:f.label, desc:'' }; }
+function fontPickerHTML(cur){
+  const f = FONTS.find(x=>x.value===cur) || FONTS[0];
+  const p = fontParts(f);
+  const face = v => v==='beads' ? "'Archivo Black', sans-serif" : v;
+  const nameHTML = (v, n) => v==='beads' ? `<span class="fp-beads">${[...'BEADS'].map(ch=>`<i>${ch}</i>`).join('')}</span>` : n;
+  return `<div class="fontpick" id="p_fontpick">
+    <button type="button" class="fp-btn" id="p_fontbtn" aria-haspopup="listbox" aria-expanded="false"><span class="fp-name" style="font-family:${face(f.value)}">${nameHTML(f.value,p.name)}</span><span class="fp-desc">${p.desc}</span><span class="fp-car">▾</span></button>
+    <div class="fp-list" id="p_fontlist" role="listbox" hidden>
+      ${FONTS.map(x=>{ const q = fontParts(x); return `<button type="button" role="option" class="fp-opt ${x.value===f.value?'on':''}" data-v="${x.value}"><span class="fp-name" style="font-family:${face(x.value)}">${nameHTML(x.value,q.name)}</span><span class="fp-desc">${q.desc}</span></button>`; }).join('')}
+    </div></div>`;
+}
+function bindFontPicker(el){
+  const btn = document.getElementById('p_fontbtn'), list = document.getElementById('p_fontlist');
+  if(!btn || !list) return;
+  const orig = el.fontFamily || 'Inter, sans-serif';
+  let chosen = false;
+  const close = ()=>{ list.hidden = true; btn.setAttribute('aria-expanded','false'); document.removeEventListener('pointerdown', away, true);
+    if(!chosen && el.fontFamily!==orig){ el.fontFamily = orig; draw(); } };
+  const away = e=>{ if(!e.target.closest('#p_fontpick')) close(); };
+  btn.addEventListener('click', ()=>{
+    if(!list.hidden){ close(); return; }
+    list.hidden = false; btn.setAttribute('aria-expanded','true');
+    const on = list.querySelector('.fp-opt.on'); if(on) on.scrollIntoView({ block:'center' });
+    document.addEventListener('pointerdown', away, true);
+  });
+  list.querySelectorAll('.fp-opt').forEach(o=>{
+    o.addEventListener('mouseenter', ()=>{ if(window.matchMedia('(hover:hover)').matches){ el.fontFamily = o.dataset.v; draw(); } });
+    o.addEventListener('click', ()=>{ chosen = true; el.fontFamily = o.dataset.v; list.hidden = true; document.removeEventListener('pointerdown', away, true); draw(); renderProps(); });
+  });
+  list.addEventListener('mouseleave', ()=>{ if(!chosen && el.fontFamily!==orig){ el.fontFamily = orig; draw(); } });
+}
 
 // =========================== PLAN GATE: FREE-WITH-ADS OR ONE-TIME PURCHASE ====
 // Client-side plan gate. This is a soft gate only — anything running purely in
@@ -2356,11 +2434,12 @@ let templateStates = {};   // key -> { elements, bg }
 const freshBg = tpl => { const c = makeBgCell(); if(tpl && tpl.bgColor){ c.color = tpl.bgColor; c.tplColor = true; } return { layout:'full', cells:[c] }; };
 const freshElements = tpl => tpl.build().map((e,i)=>({...e, z: e.z*10+i}));
 const mediaOf = st => [...st.bg.cells.map(c=>c.el), ...st.elements.map(e=>e.el), ...st.elements.map(e=>e.fillEl)].filter(m => m && m.tagName==='VIDEO');
-function tplEdited(){ return histFor(currentTplKey).stack.length > 1; }
+function tplEdited(){ const d = slidesByTpl[currentTplKey]; return histFor(histKey()).stack.length > 1 || !!(d && d.list.length > 1); }
 function loadTemplate(key, opts={}){
   const tpl = TEMPLATES.find(t=>t.key===key);
   if(!tpl) return;
   if(currentTplKey && currentTplKey!==key){
+    syncDeck();
     const leaving = { elements, bg };
     if(tplEdited()) templateStates[currentTplKey] = leaving;
     mediaOf(leaving).forEach(v => v.pause());
@@ -2383,6 +2462,7 @@ function loadTemplate(key, opts={}){
   renderLayerList();
   renderProps();
   draw();
+  if(typeof renderSlideBar==='function') renderSlideBar();
 }
 
 // ---- favourites + list/grid view (remembered in this browser) ----
@@ -2660,6 +2740,7 @@ function renderScene(tctx, tW, tH, opts={}){
 }
 
 function draw(panT){
+  fitTextBoxes();
   renderScene(ctx, W, H, { panT, showSelection: selectedId && !selectedId.startsWith('__bg_'), bgSelectionIdx: (selectedId && selectedId.startsWith('__bg_')) ? parseInt(selectedId.slice(5)) : null });
   if(activeGuides.length){
     ctx.save();
@@ -2679,6 +2760,7 @@ function draw(panT){
     renderScene(previewCtx, previewCanvas.width, previewCanvas.height, { panT });
   }
   refreshActiveThumbnail();
+  if(typeof queueSlideThumb==='function') queueSlideThumb();
   scheduleCommit();
   if(!motionRunning && hasMotion()) motionLoop();
 }
@@ -2773,22 +2855,70 @@ function drawElementTo(tctx, tW, tH, el){
   } else if(el.type==='text' && el.fontFamily==='beads'){
     drawBeads(tctx, el, x, y, w, (el.fontSize||.02)*tH);
   } else if(el.type==='text'||el.type==='emoji'){
-    const fs = (el.fontSize||.02)*tH;
-    tctx.font = `${el.fontStyle==='italic'?'italic ':''}${el.fontWeight||400} ${fs}px ${el.fontFamily||'Inter, sans-serif'}`;
+    const L = textLayout(tctx, el, tW, tH);
+    if(L.bg) drawTextBg(tctx, el, L, x, y, w);
+    tctx.font = textFont(el, L.fs);
     tctx.fillStyle = el.color||'#ffffff';
     tctx.textBaseline = 'top';
     tctx.textAlign = el.align==='center'?'center':(el.align==='right'?'right':'left');
     const tx = el.align==='center'? x+w/2 : (el.align==='right'? x+w : x);
-    wrapText(tctx, el.type==='emoji'?el.emoji:el.text, tx, y, w, fs*1.25, { strike: el.strikethrough, underline: el.underline });
+    L.lines.forEach((ln,i)=> wrapText(tctx, ln.text, tx, y + L.padV + i*L.lineH, Infinity, L.lineH, { strike: el.strikethrough, underline: el.underline }));
   }
   tctx.restore();
 }
 
-// Letter beads: every character sits on its own white round bead (like alphabet
-// bracelet beads). fs is the font size in px; each bead is fs*1.4 wide.
-function drawBeads(c, el, x, y, maxW, fs){
+// ---- text layout: one place that decides how a text element wraps, so drawing,
+// the selection box, tapping and the edit box all agree on where the text is.
+const TEXT_BG_STYLES = [['','None'],['box','Box behind the text'],['line','Highlight each line'],['pill','Rounded pill']];
+function textFont(el, fs){ return `${el.fontStyle==='italic'?'italic ':''}${el.fontWeight||400} ${fs}px ${el.fontFamily||'Inter, sans-serif'}`; }
+function textLayout(c, el, tW, tH){
+  const fs = (el.fontSize||.02)*tH, lineH = fs*1.25, maxW = el.w*tW;
+  const bg = el.type==='text' && el.bgStyle ? el.bgStyle : '';
+  const padV = bg ? fs*.22 : 0, padH = bg ? fs*.42 : 0;
+  c.save(); c.font = textFont(el, fs);
+  const raw = String((el.type==='emoji' ? el.emoji : el.text) || '');
+  const lines = [];
+  raw.split('\n').forEach(par=>{
+    const words = par.split(' ');
+    let line = '';
+    for(let i=0;i<words.length;i++){
+      const test = line + words[i] + ' ';
+      if(c.measureText(test).width > maxW && line){ lines.push(line); line = words[i] + ' '; }
+      else line = test;
+    }
+    lines.push(line);
+  });
+  const out = lines.map(t => ({ text:t, w: c.measureText(t.replace(/\s+$/,'')).width }));
+  c.restore();
+  return { fs, lineH, lines: out, bg, padV, padH, height: out.length*lineH + padV*2,
+           widest: Math.max(0, ...out.map(l=>l.w)) };
+}
+function drawTextBg(c, el, L, x, y, w){
+  const op = el.bgOpacity!=null ? el.bgOpacity : .6;
+  if(op <= 0) return;
+  c.save();
+  c.globalAlpha *= op;
+  c.fillStyle = el.bgColor || '#000000';
+  const rad = (el.bgRadius!=null ? el.bgRadius : .3) * L.fs;
+  const left = lw => el.align==='center' ? x + (w - lw)/2 : el.align==='right' ? x + w - lw : x;
+  const visible = L.lines.filter(l => l.w > 0);
+  if(!visible.length){ c.restore(); return; }
+  if(L.bg==='line'){
+    L.lines.forEach((l,i)=>{
+      if(!l.w) return;
+      const bw = l.w + L.padH*2, bx = left(l.w) - L.padH, by = y + i*L.lineH;
+      roundRectPath(c, bx, by, bw, L.lineH + L.padV*2, Math.min(rad, (L.lineH+L.padV*2)/2)); c.fill();
+    });
+  } else {
+    const bw = L.widest + L.padH*2, bx = left(L.widest) - L.padH, bh = L.height;
+    const r = L.bg==='pill' ? Math.min(bh, bw)/2 : Math.min(rad, bh/2);
+    roundRectPath(c, bx, y, bw, bh, r); c.fill();
+  }
+  c.restore();
+}
+// Letter beads layout (shared by drawing and box fitting)
+function beadLayout(el, maxW, fs){
   const text = String(el.text||'');
-  if(!text.trim()) return;
   const D = fs*1.4, gap = D*0.05, space = D*0.4, lineH = D*1.14;
   const wordW = wd => wd.length*D + Math.max(0,wd.length-1)*gap;
   const lines = [];
@@ -2800,6 +2930,42 @@ function drawBeads(c, el, x, y, maxW, fs){
     });
     lines.push(cur);
   });
+  const widths = lines.map(ln => ln.reduce((a,b)=>a+wordW(b),0) + space*Math.max(0,ln.length-1));
+  return { D, gap, space, lineH, wordW, lines, height: lines.length*lineH, widest: Math.max(0, ...widths) };
+}
+// Keeps every text box exactly as tall as its text (and remembers how wide the
+// text really is), so the box you see and tap always covers all the words.
+const fitCtx = document.createElement('canvas').getContext('2d');
+function fitTextBoxes(){
+  elements.forEach(el=>{
+    if(el.type!=='text' && el.type!=='emoji') return;
+    let height, widest;
+    if(el.type==='text' && el.fontFamily==='beads'){
+      const B = beadLayout(el, el.w*W, (el.fontSize||.02)*H); height = B.height; widest = B.widest;
+    } else {
+      const L = textLayout(fitCtx, el, W, H); height = L.height; widest = L.widest + L.padH*2;
+    }
+    const h = Math.max(.012, height/H);
+    if(Math.abs(h - el.h) > 1e-4) el.h = h;
+    el._tw = widest/W;   // real width of the widest line (can be wider than the box for one long word)
+  });
+}
+// The area that counts as "this text" for tapping: the box, widened to the real text.
+function textHitBounds(el){
+  const b = elBounds(el);
+  if((el.type!=='text' && el.type!=='emoji') || !el._tw) return b;
+  const tw = el._tw*W;
+  if(tw <= b.w) return b;
+  const x = el.align==='center' ? b.x + (b.w - tw)/2 : el.align==='right' ? b.x + b.w - tw : b.x;
+  return { x, y:b.y, w:tw, h:b.h };
+}
+
+// Letter beads: every character sits on its own white round bead (like alphabet
+// bracelet beads). fs is the font size in px; each bead is fs*1.4 wide.
+function drawBeads(c, el, x, y, maxW, fs){
+  const text = String(el.text||'');
+  if(!text.trim()) return;
+  const { D, gap, space, lineH, wordW, lines } = beadLayout(el, maxW, fs);
   // letters stay readable: a light colour on a white bead switches to near-black
   let ink = el.color||'#1d1d1f';
   const hx = toHex(ink).replace('#','');
@@ -2976,11 +3142,15 @@ function hitElement(pos){
   const sorted = [...elements].sort((a,b)=>b.z-a.z);
   for(const el of sorted){
     if(el.locked) continue;
-    const b = elBounds(el);
+    const b0 = elBounds(el);
+    const b = textHitBounds(el);
+    // a little extra margin around small text so it's easy to grab on a phone
+    const pad = (el.type==='text'||el.type==='emoji') ? Math.max(0, 12*(canvas.width/canvas.getBoundingClientRect().width) - Math.min(b.h, b.w)/4) : 0;
+    b.x -= pad; b.y -= pad; b.w += pad*2; b.h += pad*2;
     let testPos = pos;
     const rad = (el.rotation||0)*Math.PI/180;
     if(rad){
-      const cx=b.x+b.w/2, cy=b.y+b.h/2;
+      const cx=b0.x+b0.w/2, cy=b0.y+b0.h/2;
       testPos = rotatePoint(pos.x,pos.y,cx,cy,-rad);
     }
     if(testPos.x>=b.x && testPos.x<=b.x+b.w && testPos.y>=b.y && testPos.y<=b.y+b.h) return el;
@@ -3111,7 +3281,7 @@ function handlePointerMove(e){
     if(drag.corner==='bl'){ el.w = Math.max(.02,o.w-dxFrac); el.x = o.x+dxFrac; el.h = Math.max(.02,o.h+dyFrac); }
     if(drag.corner==='tr'){ el.w = Math.max(.02,o.w+dxFrac); el.h = Math.max(.02,o.h-dyFrac); el.y = o.y+dyFrac; }
     if(drag.corner==='tl'){ el.w = Math.max(.02,o.w-dxFrac); el.x = o.x+dxFrac; el.h = Math.max(.02,o.h-dyFrac); el.y = o.y+dyFrac; }
-    if((el.type==='text'||el.type==='emoji')) el.fontSize = Math.max(.008, el.h*0.6);
+    if((el.type==='text'||el.type==='emoji')) el.fontSize = Math.max(.008, (o.fontSize||.02) * (el.h/(o.h||el.h)));
   }
   // Snap to the canvas's own center lines/edges (only meaningful for unrotated elements,
   // since the bounding box used for snapping is axis-aligned).
@@ -3160,18 +3330,34 @@ canvas.addEventListener('touchend', (e)=>{
 });
 
 function openInlineEditor(el){
+  overlayLayer.querySelectorAll('textarea.inline-edit').forEach(t=>t.blur());
+  fitTextBoxes();
   const rectStage = canvas.getBoundingClientRect();
   const scaleX = rectStage.width/canvas.width, scaleY = rectStage.height/canvas.height;
-  const b = elBounds(el);
+  const b = textHitBounds(el);
+  const fsPx = (el.fontSize||.02)*H*scaleY;
+  const beads = el.fontFamily==='beads';
   const ta = document.createElement('textarea');
   ta.className='inline-edit';
   ta.value = el.type==='emoji'?el.emoji:el.text;
-  ta.style.left = (b.x*scaleX)+'px';
-  ta.style.top = (b.y*scaleY)+'px';
-  ta.style.width = (b.w*scaleX)+'px';
-  ta.style.height = (b.h*scaleY)+'px';
-  ta.style.fontSize = (el.fontSize*H*scaleY)+'px';
+  const pad = 6;
+  ta.style.left = (b.x*scaleX - pad)+'px';
+  ta.style.top = (b.y*scaleY - pad)+'px';
+  ta.style.width = Math.max(60, b.w*scaleX + pad*2)+'px';
+  ta.style.padding = pad+'px';
+  ta.style.boxSizing = 'border-box';
+  ta.style.fontSize = (beads ? fsPx*0.75 : fsPx)+'px';
+  ta.style.lineHeight = beads ? '1.6' : '1.25';
+  ta.style.fontFamily = beads ? "'Archivo Black', sans-serif" : (el.fontFamily||'Inter, sans-serif');
+  ta.style.fontWeight = el.fontWeight||400;
+  ta.style.fontStyle = el.fontStyle||'normal';
+  ta.style.textAlign = el.align||'left';
+  ta.style.overflow = 'hidden';
+  if(el.rotation){ ta.style.transform = `rotate(${el.rotation}deg)`; ta.style.transformOrigin = 'center center'; }
+  const grow = ()=>{ ta.style.height = 'auto'; ta.style.height = Math.max(b.h*scaleY + pad*2, ta.scrollHeight + 2)+'px'; };
   overlayLayer.appendChild(ta);
+  grow();
+  ta.addEventListener('input', grow);
   ta.focus(); ta.select();
   function commit(){
     if(el.type==='emoji') el.emoji = ta.value; else el.text = ta.value;
@@ -3236,9 +3422,7 @@ function renderProps(){
     html += `<label class="field">Content</label><textarea class="propbox" id="p_text">${(el.type==='emoji'?el.emoji:el.text)||''}</textarea>`;
     if(el.type==='text'){
       const curFont = el.fontFamily || 'Inter, sans-serif';
-      html += `<label class="field">Font</label><select id="p_font" style="width:100%;background:#0e0d0a;color:#fff;border:1px solid var(--panel-line);border-radius:5px;padding:7px;margin-bottom:8px;">
-        ${FONTS.map(f=>`<option value="${f.value}" ${curFont===f.value?'selected':''}>${f.label}</option>`).join('')}
-      </select>`;
+      html += `<label class="field">Font</label>${fontPickerHTML(curFont)}`;
     }
     html += `<div class="row"><div><label class="field">Size</label><input type="range" id="p_size" min="0.01" max="0.12" step="0.002" value="${el.fontSize||.02}"></div></div>`;
     if(el.type==='text'){
@@ -3255,6 +3439,18 @@ function renderProps(){
           <button type="button" id="p_strike" class="btn small ${el.strikethrough?'primary':''}" style="flex:1;text-decoration:line-through;">S</button>
           <button type="button" id="p_underline" class="btn small ${el.underline?'primary':''}" style="flex:1;text-decoration:underline;">U</button>
         </div>`;
+      if(el.fontFamily!=='beads'){
+        const bs = el.bgStyle||'';
+        html += `<label class="field" style="margin-top:8px;">Text background</label>
+          <select id="p_bgstyle" style="width:100%;background:#0e0d0a;color:#fff;border:1px solid var(--panel-line);border-radius:5px;padding:7px;margin-bottom:8px;">
+            ${TEXT_BG_STYLES.map(([v,l])=>`<option value="${v}" ${bs===v?'selected':''}>${l}</option>`).join('')}
+          </select>`;
+        if(bs){
+          html += `<div class="row"><div style="flex:0 0 64px;"><label class="field">Colour</label><input type="color" id="p_bgcolor" value="${toHex(el.bgColor||'#000000')}"></div>
+            <div><label class="field">See-through <span id="p_bgop_v" style="opacity:.7">${Math.round((1-(el.bgOpacity!=null?el.bgOpacity:.6))*100)}%</span></label><input type="range" id="p_bgop" min="0.05" max="1" step="0.05" value="${el.bgOpacity!=null?el.bgOpacity:.6}"></div></div>
+            ${bs!=='pill' ? `<div class="row"><div><label class="field">Round corners</label><input type="range" id="p_bgrad" min="0" max="1" step="0.05" value="${el.bgRadius!=null?el.bgRadius:.3}"></div></div>` : ''}`;
+        }
+      }
     }
   }
   if(el.type==='rect'){
@@ -3326,7 +3522,15 @@ function renderProps(){
   bind('p_italic','click', ()=>{ el.fontStyle = (el.fontStyle==='italic') ? undefined : 'italic'; draw(); renderProps(); });
   bind('p_strike','click', ()=>{ el.strikethrough = !el.strikethrough; draw(); renderProps(); });
   bind('p_underline','click', ()=>{ el.underline = !el.underline; draw(); renderProps(); });
-  bind('p_font','change', e=>{ el.fontFamily=e.target.value; draw(); });
+  bind('p_bgstyle','change', e=>{
+    if(e.target.value){ el.bgStyle = e.target.value; if(!el.bgColor) el.bgColor = '#000000'; if(el.bgOpacity==null) el.bgOpacity = .6; }
+    else delete el.bgStyle;
+    draw(); renderProps();
+  });
+  bind('p_bgcolor','input', e=>{ el.bgColor = e.target.value; draw(); });
+  bind('p_bgop','input', e=>{ el.bgOpacity = parseFloat(e.target.value); const v=document.getElementById('p_bgop_v'); if(v) v.textContent = Math.round((1-el.bgOpacity)*100)+'%'; draw(); });
+  bind('p_bgrad','input', e=>{ el.bgRadius = parseFloat(e.target.value); draw(); });
+  bindFontPicker(el);
   bind('p_fill','input', e=>{ el.fill=e.target.value; draw(); });
   bind('p_filltype','change', e=>{ el.fillType=e.target.value; draw(); renderProps(); });
   bind('p_fillimg','click', ()=>{ document.getElementById('fileInputRectFill').click(); });
@@ -3569,6 +3773,8 @@ document.getElementById('fileInputRectFill').addEventListener('change',(e)=>{
 const HISTORY_MAX = 60;
 const histories = {};   // template key -> { stack:[{sig, elements, bg}], idx }
 function histFor(key){ return histories[key] || (histories[key] = { stack:[], idx:-1 }); }
+// each slide of a carousel has its own undo history
+function histKey(){ const d = slidesByTpl[currentTplKey]; const id = d ? d.list[d.idx].id : ''; return currentTplKey + (id ? '#' + id : ''); }
 function stateSig(){
   return JSON.stringify({ e: elements.map(({el, fillEl, ...rest}) => rest), l: bg.layout,
     c: bg.cells.map(c => [c.type, c.src, c.color, c.focalX, c.focalY, c.zoom]) });
@@ -3576,7 +3782,7 @@ function stateSig(){
 function snapshot(){ return { sig: stateSig(), elements: elements.map(e=>({...e})), bg: { layout:bg.layout, cells: bg.cells.map(c=>({...c})) } }; }
 function commitHistory(){
   if(!currentTplKey) return;
-  const h = histFor(currentTplKey), sig = stateSig();
+  const h = histFor(histKey()), sig = stateSig();
   if(h.idx >= 0 && h.stack[h.idx].sig === sig) return;
   h.stack = h.stack.slice(0, h.idx + 1);
   h.stack.push(snapshot());
@@ -3596,10 +3802,10 @@ function restoreSnapshot(snap){
   selectedId = null;
   refreshBgLayoutButtons(); renderLayerList(); renderProps(); draw(); updateHistoryButtons();
 }
-function undo(){ const h = histFor(currentTplKey); if(h.idx <= 0) return; h.idx--; restoreSnapshot(h.stack[h.idx]); setStatus('Undone.'); }
-function redo(){ const h = histFor(currentTplKey); if(h.idx >= h.stack.length - 1) return; h.idx++; restoreSnapshot(h.stack[h.idx]); setStatus('Redone.'); }
+function undo(){ const h = histFor(histKey()); if(h.idx <= 0) return; h.idx--; restoreSnapshot(h.stack[h.idx]); setStatus('Undone.'); }
+function redo(){ const h = histFor(histKey()); if(h.idx >= h.stack.length - 1) return; h.idx++; restoreSnapshot(h.stack[h.idx]); setStatus('Redone.'); }
 function updateHistoryButtons(){
-  const h = histFor(currentTplKey);
+  const h = histFor(histKey());
   document.getElementById('undoBtn').disabled = h.idx <= 0;
   document.getElementById('redoBtn').disabled = h.idx >= h.stack.length - 1;
 }
@@ -3608,9 +3814,13 @@ async function clearThisTemplate(){
   if(!(await askStudio('Clear this template? Your photos, text and changes on it are removed. (You can undo this.)', 'Clear template'))) return;
   const tpl = TEMPLATES.find(t=>t.key===currentTplKey);
   delete templateStates[currentTplKey];
+  if(slidesByTpl[currentTplKey]){
+    slidesByTpl[currentTplKey].list.forEach(sl => { if(sl.id) delete histories[currentTplKey + '#' + sl.id]; });
+    delete slidesByTpl[currentTplKey];
+  }
   elements = freshElements(tpl); bg = freshBg(tpl); selectedId = null;
   refreshBgLayoutButtons(); renderLayerList(); renderProps(); draw();
-  commitHistory(); renderTplList(); setStatus('Template cleared. Press Undo to bring it back.');
+  commitHistory(); renderTplList(); renderSlideBar(); setStatus('Template cleared. Press Undo to bring it back.');
 }
 async function clearAllTemplates(){
   const n = Object.keys(templateStates).length + (tplEdited() ? 1 : 0);
@@ -3618,11 +3828,12 @@ async function clearAllTemplates(){
   if(!(await askStudio(`Clear all ${n} edited template${n>1?'s':''}? Every photo, text and change is removed. This can’t be undone.`, 'Clear all'))) return;
   Object.values(templateStates).forEach(st => mediaOf(st).forEach(v => v.pause()));
   templateStates = {};
+  Object.keys(slidesByTpl).forEach(k => delete slidesByTpl[k]);
   Object.keys(histories).forEach(k => delete histories[k]);
   const tpl = TEMPLATES.find(t=>t.key===currentTplKey);
   elements = freshElements(tpl); bg = freshBg(tpl); selectedId = null;
   refreshBgLayoutButtons(); renderLayerList(); renderProps(); draw();
-  commitHistory(); renderTplList(); setStatus('All templates cleared.');
+  commitHistory(); renderTplList(); renderSlideBar(); setStatus('All templates cleared.');
 }
 document.getElementById('undoBtn').onclick = undo;
 document.getElementById('redoBtn').onclick = redo;
@@ -3661,7 +3872,7 @@ function showCtxMenu(e){
   e.preventDefault();
   const pos = canvasPos(e), el = hitElement(pos);
   if(el){ selectedId = el.id; draw(); renderProps(); }
-  const h = histFor(currentTplKey), mac = /Mac|iPhone|iPad/.test(navigator.platform), K = mac ? '⌘' : 'Ctrl+';
+  const h = histFor(histKey()), mac = /Mac|iPhone|iPad/.test(navigator.platform), K = mac ? '⌘' : 'Ctrl+';
   const items = [
     ['copy', 'Copy', K+'C', !el], ['paste', 'Paste', K+'V', !clipboardEl], ['duplicate', 'Duplicate', K+'D', !el], ['delete', 'Delete', '⌫', !el],
     'sep', ['front', 'Bring to front', '', !el], ['back', 'Send to back', '', !el],
@@ -3737,7 +3948,7 @@ document.getElementById('aspect').addEventListener('change', (e)=>{
   W=w; H=h; canvas.width=w; canvas.height=h;
   const pw = 180, ph = Math.round(180*(h/w));
   previewCanvas.width = pw; previewCanvas.height = ph;
-  fitStage(); draw();
+  fitStage(); draw(); renderSlideBar();
 });
 function fitStage(){
   const wrap = document.getElementById('stage-wrap');
@@ -3950,6 +4161,167 @@ document.getElementById('expMp4').onclick = ()=>{
   });
 };
 
+// =========================== CAROUSEL SLIDES ==============================
+// A template can hold several slides (a carousel). The slide being edited lives
+// in the normal `elements` / `bg`; the others wait in slidesByTpl. The first
+// slide keeps the id '' so its undo history is the template's usual one.
+const slidesByTpl = {};   // template key -> { list:[{id, elements, bg}], idx }
+let slideSeq = 2;
+function deck(){ return slidesByTpl[currentTplKey] || null; }
+function syncDeck(){ const d = deck(); if(d){ d.list[d.idx].elements = elements; d.list[d.idx].bg = bg; } }
+function ensureDeck(){
+  if(!slidesByTpl[currentTplKey]) slidesByTpl[currentTplKey] = { list:[{ id:'', elements, bg }], idx:0 };
+  syncDeck();
+  return slidesByTpl[currentTplKey];
+}
+function showSlide(i){
+  const d = deck(); if(!d || i<0 || i>=d.list.length) return;
+  syncDeck();
+  mediaOf({ elements, bg }).forEach(v => v.pause());
+  d.idx = i;
+  elements = d.list[i].elements; bg = d.list[i].bg;
+  selectedId = null; repositionId = null;
+  const vids = mediaOf({ elements, bg });
+  if(vids.length){ vids.forEach(v => v.play().catch(()=>{})); videoLoop(); }
+  refreshBgLayoutButtons(); renderLayerList(); renderProps(); draw();
+  commitHistory(); updateHistoryButtons();
+  renderSlideBar();
+}
+function addSlide(copy){
+  const d = ensureDeck();
+  let slide;
+  if(copy){
+    slide = { id:'s'+(slideSeq++), elements: elements.map(e => ({ ...e, id: nextId() })),
+              bg: { layout: bg.layout, cells: bg.cells.map(c => ({ ...c })) } };
+  } else {
+    // a blank canvas in the same background colour as this slide (white if it has a photo)
+    const c0 = bg.cells[0], cell = makeBgCell();
+    cell.color = (c0 && c0.type==='none' && c0.color) ? c0.color : '#ffffff';
+    slide = { id:'s'+(slideSeq++), elements: [], bg: { layout:'full', cells:[cell] } };
+  }
+  d.list.splice(d.idx + 1, 0, slide);
+  showSlide(d.idx + 1);
+  renderTplList();
+  setStatus(copy ? 'Slide duplicated — change what you like on it.' : 'New blank slide added. Your other slides are in the strip above the canvas.');
+}
+function moveSlide(dir){
+  const d = deck(); if(!d) return;
+  const j = d.idx + dir; if(j<0 || j>=d.list.length) return;
+  syncDeck();
+  [d.list[d.idx], d.list[j]] = [d.list[j], d.list[d.idx]];
+  d.idx = j; renderSlideBar();
+}
+async function deleteSlide(){
+  const d = deck(); if(!d || d.list.length < 2) return;
+  if(!(await askStudio(`Delete slide ${d.idx+1}? Everything on it is removed.`, 'Delete slide'))) return;
+  syncDeck();
+  mediaOf({ elements, bg }).forEach(v => v.pause());
+  const gone = d.list.splice(d.idx, 1)[0];
+  if(gone.id) delete histories[currentTplKey + '#' + gone.id];
+  const next = Math.min(d.idx, d.list.length - 1);
+  if(gone.id===''){ // keep the template's own history attached to whichever slide is now first
+    const first = d.list[0]; if(first.id){ delete histories[currentTplKey + '#' + first.id]; first.id = ''; histories[currentTplKey] = { stack:[], idx:-1 }; }
+  }
+  const keep = d.list[next];
+  d.idx = next; elements = keep.elements; bg = keep.bg;
+  showSlide(next);
+  renderTplList();
+  setStatus('Slide deleted.');
+}
+// draws any slide onto a canvas, using the normal renderer
+function renderSlideTo(slide, tctx, tW, tH){
+  const se = elements, sb = bg, ss = selectedId;
+  elements = slide.elements; bg = slide.bg; selectedId = null;
+  try{ fitTextBoxes(); renderScene(tctx, tW, tH, {}); }
+  finally{ elements = se; bg = sb; selectedId = ss; }
+}
+const SLIDE_TH = 52;
+function renderSlideBar(){
+  const bar = document.getElementById('slideBar'); if(!bar) return;
+  const d = deck(), n = d ? d.list.length : 1, idx = d ? d.idx : 0;
+  const tw = Math.round(SLIDE_TH * W / H);
+  let html = `<span class="sb-label">${n>1 ? 'Slide '+(idx+1)+' of '+n : 'Slides'}</span>
+    <button type="button" class="btn small sb-btn" id="sbAdd" title="Add an empty slide after this one">+ Blank slide</button>
+    <button type="button" class="btn small sb-btn" id="sbDup" title="Copy this slide (same layout and text) as the next slide">⧉ Duplicate</button>
+    <span class="sb-sep"></span>`;
+  for(let i=0;i<n;i++) html += `<button type="button" class="sb-thumb ${i===idx?'on':''}" data-i="${i}" title="Slide ${i+1}"><canvas width="${tw*2}" height="${SLIDE_TH*2}" style="width:${tw}px;height:${SLIDE_TH}px"></canvas><b>${i+1}</b></button>`;
+  if(n>1) html += `<span class="sb-sep"></span><button type="button" class="btn small sb-btn" id="sbLeft" title="Move this slide earlier" ${idx===0?'disabled':''}>◀</button>
+    <button type="button" class="btn small sb-btn" id="sbRight" title="Move this slide later" ${idx===n-1?'disabled':''}>▶</button>
+    <button type="button" class="btn small sb-btn" id="sbDel" title="Delete this slide" style="border-color:#5a3a2f;color:#e08a70;">🗑</button>`;
+  bar.innerHTML = html;
+  bar.querySelectorAll('.sb-thumb').forEach(b => b.onclick = () => { const i = +b.dataset.i; if(i!==idx) showSlide(i); });
+  document.getElementById('sbAdd').onclick = () => addSlide(false);
+  document.getElementById('sbDup').onclick = () => addSlide(true);
+  const L = document.getElementById('sbLeft'), R = document.getElementById('sbRight'), X = document.getElementById('sbDel');
+  if(L) L.onclick = () => moveSlide(-1);
+  if(R) R.onclick = () => moveSlide(1);
+  if(X) X.onclick = deleteSlide;
+  const thumbs = bar.querySelectorAll('.sb-thumb canvas');
+  thumbs.forEach((cv, i) => {
+    const c = cv.getContext('2d');
+    if(i===idx) renderScene(c, cv.width, cv.height, {});
+    else if(d) renderSlideTo(d.list[i], c, cv.width, cv.height);
+  });
+  const on = bar.querySelector('.sb-thumb.on'); if(on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' });
+  const ea = document.getElementById('exportAll');
+  if(ea){ ea.hidden = n < 2; document.getElementById('eaCount').textContent = n; }
+}
+let slideThumbQueued = false;
+function queueSlideThumb(){
+  if(slideThumbQueued) return; slideThumbQueued = true;
+  requestAnimationFrame(()=>{
+    slideThumbQueued = false;
+    const cv = document.querySelector('#slideBar .sb-thumb.on canvas'); if(!cv) return;
+    renderScene(cv.getContext('2d'), cv.width, cv.height, {});
+  });
+}
+// ---- save every slide: share sheet on phones (save to Photos), one ZIP on computers
+function dataUrlBytes(u){ const b = atob(u.split(',')[1]); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i] = b.charCodeAt(i); return a; }
+const CRC_TABLE = (()=>{ const t = new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320 ^ (c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(a){ let c = 0xFFFFFFFF; for(let i=0;i<a.length;i++) c = CRC_TABLE[(c ^ a[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(files){   // files: [{name, data:Uint8Array}] — stored, no compression (images are already compressed)
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const u16 = v => [v & 255, (v>>>8) & 255], u32 = v => [v & 255, (v>>>8) & 255, (v>>>16) & 255, (v>>>24) & 255];
+  files.forEach(f => {
+    const nm = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const head = new Uint8Array([...u32(0x04034b50), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0)]);
+    parts.push(head, nm, f.data);
+    central.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nm);
+    off += head.length + nm.length + sz;
+  });
+  const cSize = central.reduce((a,b)=>a+b.length, 0);
+  const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cSize), ...u32(off), ...u16(0)]);
+  return new Blob([...parts, ...central, end], { type:'application/zip' });
+}
+function exportAllSlides(kind){
+  const d = deck(); if(!d || d.list.length < 2) return;
+  runExportAd(()=>{
+    syncDeck();
+    const mime = kind==='jpg' ? 'image/jpeg' : 'image/png', ext = kind==='jpg' ? 'jpg' : 'png';
+    const off = document.createElement('canvas'); off.width = W; off.height = H;
+    const oc = off.getContext('2d');
+    const files = d.list.map((sl, i) => {
+      oc.clearRect(0, 0, W, H);
+      renderSlideTo(sl, oc, W, H);
+      const name = `inspocult-slide-${String(i+1).padStart(2,'0')}.${ext}`;
+      return { name, data: dataUrlBytes(off.toDataURL(mime, 0.94)) };
+    });
+    draw();
+    const asFiles = files.map(f => new File([f.data], f.name, { type:mime }));
+    const phone = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+    if(phone && navigator.canShare && navigator.canShare({ files: asFiles })){
+      navigator.share({ files: asFiles, title:'inspocult carousel' })
+        .then(()=> setStatus(`${files.length} slides ready — pick “Save Images” to put them in Photos.`))
+        .catch(err => { if(err && err.name==='AbortError') setStatus('Cancelled.'); else { download(URL.createObjectURL(makeZip(files)), 'inspocult-carousel.zip'); setStatus(`${files.length} slides saved as a ZIP.`); } });
+      return;
+    }
+    download(URL.createObjectURL(makeZip(files)), 'inspocult-carousel.zip');
+    setStatus(`${files.length} slides saved in one ZIP (inspocult-slide-01, -02…), in order.`);
+  });
+}
+document.getElementById('expAllPng').onclick = () => exportAllSlides('png');
+document.getElementById('expAllJpg').onclick = () => exportAllSlides('jpg');
+
 // =========================== INIT =========================================
 document.querySelectorAll('#bgLayoutButtons button').forEach(btn=>{
   btn.innerHTML = buildLayoutIconSVG(btn.dataset.layout);
@@ -3968,6 +4340,7 @@ document.querySelectorAll('.tpl-filter button').forEach(b => b.onclick = ()=>{ t
 renderTplList();
 loadTemplate('blank');
 commitHistory();
+renderSlideBar();
 refreshBgLayoutButtons();
 fitStage();
 initPaywall();
@@ -4015,7 +4388,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="planner.js?v=2026-11-09f"></script>
+<script src="planner.js?v=2026-11-19a"></script>
 <script src="cutout.js?v=2026-11-09e"></script>
 </body>
 </html>

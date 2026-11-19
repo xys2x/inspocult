@@ -832,6 +832,10 @@ function injectUI(){
       </div>
       <div class="hint" id="plAtpFileHint"></div>
     </div>
+    <div id="plAtpAll" hidden style="margin-top:12px">
+      <label class="check"><input type="checkbox" id="plAtpAllChk" checked> Add all <b id="plAtpAllN">0</b> slides of your carousel, in order</label>
+      <div class="hint" id="plAtpAllNote">Untick to add only the slide on screen.</div>
+    </div>
     <div class="modal-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" id="plAtpSave">Add to planner</button></div>
   </div></div>
 
@@ -1340,6 +1344,38 @@ async function onFiles(e){
 
 // ---------- "Add to planner" from the studio ----------
 let atp = { mode:'new', date:null, formats:['ig-post'], file:'png', replaceId:null };
+// The studio's carousel (several slides in one design), or null when it's a single slide
+function studioSlides(){
+  try{ if(typeof deck!=='function') return null; const d = deck(); if(!d || d.list.length < 2) return null; syncDeck(); return d.list; }
+  catch(e){ return null; }
+}
+// "Add all slides" only makes sense for a new post or adding to a post, as pictures
+function refreshAtpAll(){
+  const box = $('#plAtpAll'); if(!box) return;
+  const list = studioSlides();
+  const can = !!list && (atp.mode==='new' || atp.mode==='slide') && atp.file!=='mp4';
+  box.hidden = !list || atp.mode==='thumb' || atp.mode==='replace';
+  if(list) $('#plAtpAllN').textContent = list.length;
+  $('#plAtpAllChk').disabled = !can;
+  $('#plAtpAllNote').textContent = atp.file==='mp4' ? 'A video adds only the slide on screen — pick PNG or JPEG to add all slides.' : 'Untick to add only the slide on screen.';
+}
+async function captureAllSlides(kind){
+  const list = studioSlides(); if(!list) return [await captureStudio(kind)];
+  const mime = kind==='jpeg' ? 'image/jpeg' : 'image/png';
+  const stamp = new Date(), base = `inspocult-${iso(stamp)}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}`;
+  const off = document.createElement('canvas'); off.width = W; off.height = H;
+  const oc = off.getContext('2d');
+  const out = [];
+  for(let i=0;i<list.length;i++){
+    oc.clearRect(0, 0, W, H);
+    renderSlideTo(list[i], oc, W, H);
+    const preview = await previewFromSource(off, W, H);
+    const blob = await new Promise((res, rej) => off.toBlob(b => b ? res(b) : rej(new Error('Slide could not be saved')), mime, 0.94));
+    out.push({ id:uid(), type:'image', mime, blob, w:W, h:H, preview, name:`${base}-${String(i+1).padStart(2,'0')}.${extFor(mime)}` });
+  }
+  try{ draw(); }catch(e){}
+  return out;
+}
 function frameFormats(){
   const vid = anyVideoAnywhere();
   return Object.keys(FORMATS).filter(k => fits(FORMATS[k], W, H) && !(FORMATS[k].media==='video' && !vid) && !(FORMATS[k].media==='image' && vid));
@@ -1351,6 +1387,7 @@ function setAtpMode(m){
   $('#plAtpMode').hidden = m==='replace';
   $('#plAtpSave').textContent = { new:'Add to planner', slide:'Add as next slide', thumb:'Set as thumbnail', replace:'Replace with this design' }[m];
   if(m==='thumb') setAtpFile('png');
+  refreshAtpAll();
 }
 function setAtpFile(ft){
   atp.file = ft; $$('#plAtpFile button').forEach(b=>b.classList.toggle('on', b.dataset.ft===ft));
@@ -1358,6 +1395,7 @@ function setAtpFile(ft){
   $('#plAtpFileHint').textContent = ft==='mp4'
     ? (animated ? 'Records your design with its video playing (takes as long as the video).' : 'Records a short 3-second animated clip of your design.')
     : ft==='jpeg' ? 'Smaller file, best for photos.' : 'Sharpest quality.';
+  refreshAtpAll();
 }
 function renderAtpFormats(){
   const good = frameFormats();
@@ -1395,6 +1433,7 @@ function openAtp(opts={}){
     : '<option value="">No YouTube videos planned yet</option>';
 
   $('#plAtpCap').value = '';
+  $('#plAtpAllChk').checked = true;
   setAtpFile(vid ? 'mp4' : 'png');
   setAtpMode(opts.mode || (r > 1.2 && !vid && ytVids.length ? 'thumb' : 'new'));
   $('#plAtpScrim').classList.add('open');
@@ -1423,20 +1462,24 @@ async function saveFromStudio(){
   if(atp.mode==='replace'){ target = mine().find(x=>x.id===atp.replaceId); if(!target){ closeModals(); return; } }
 
   btn.disabled = true; const label = btn.textContent; btn.textContent = atp.file==='mp4' && atp.mode!=='thumb' ? 'Recording…' : 'Saving…';
-  let slide;
-  try{ slide = await captureStudio(atp.mode==='thumb' ? 'png' : atp.file); }
+  let slide, slides;
+  const allSlides = !!studioSlides() && (atp.mode==='new' || atp.mode==='slide') && atp.file!=='mp4' && $('#plAtpAllChk').checked;
+  try{
+    if(allSlides){ slides = await captureAllSlides(atp.file); slide = slides[0]; }
+    else { slide = await captureStudio(atp.mode==='thumb' ? 'png' : atp.file); slides = [slide]; }
+  }
   catch(err){ console.error(err); toast('Could not capture the design. Try PNG instead.', true); btn.disabled = false; btn.textContent = label; return; }
   finally{ try{ setProgress(0); }catch(e){} }
   btn.disabled = false; btn.textContent = label;
 
   let p;
   if(atp.mode==='new'){
-    p = newPost(atp.date, [...atp.formats], [slide], { time:$('#plAtpTime').value || '18:00', caption:$('#plAtpCap').value });
-    store.push(p); slideIdx = 0; toast('Added to planner ✓');
+    p = newPost(atp.date, [...atp.formats], slides, { time:$('#plAtpTime').value || '18:00', caption:$('#plAtpCap').value });
+    store.push(p); slideIdx = 0; toast(slides.length>1 ? `Added as a carousel of ${slides.length} slides ✓` : 'Added to planner ✓');
   } else if(atp.mode==='slide'){
-    p = target; p.slides.push(slide); slideIdx = p.slides.length-1;
+    p = target; const from = p.slides.length + 1; p.slides.push(...slides); slideIdx = p.slides.length - slides.length;
     if(!p.formats.length) p.formats = ['ig-post'];
-    toast(`Added as slide ${p.slides.length} ✓`);
+    toast(slides.length>1 ? `Added as slides ${from}–${p.slides.length} ✓` : `Added as slide ${p.slides.length} ✓`);
   } else if(atp.mode==='thumb'){
     p = target; dropSlide(p, p.thumb); p.thumb = slide; toast('Thumbnail set ✓');
   } else {
